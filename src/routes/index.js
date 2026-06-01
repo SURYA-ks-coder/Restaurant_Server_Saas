@@ -1,0 +1,49 @@
+const express = require("express");
+const authRoutes = require("../modules/auth/auth.routes");
+const onboardingRoutes = require("../modules/onboarding/onboarding.routes");
+const branchRoutes = require("../modules/branch/branch.routes");
+const subscriptionRoutes = require("../modules/subscription/subscription.routes");
+const categoryRoutes = require("../modules/category/category.routes");
+const subcategoryRoutes = require("../modules/subcategory/subcategory.routes");
+const menuItemRoutes = require("../modules/menuItem/menuItem.routes");
+const qrOrderRoutes = require("../modules/qrOrder/qrOrder.routes");
+const tableRoutes = require("../modules/table/table.routes");
+const tableReservationRoutes = require("../modules/tableReservation/tableReservation.routes");
+const posRoutes = require("../modules/pos/pos.routes");
+const kotRoutes = require("../modules/kot/kot.routes");
+const inventoryRoutes = require("../modules/inventory/inventory.routes");
+const recipeRoutes = require("../modules/recipe/recipe.routes");
+const expenseRoutes = require("../modules/expense/expense.routes");
+const customerRoutes = require("../modules/customer/customer.routes");
+const staffRoutes = require("../modules/staff/staff.routes");
+const roleRoutes = require("../modules/role/role.routes");
+const reportsRoutes = require("../modules/reports/reports.routes");
+const supplierRoutes = require("../modules/supplier/supplier.routes");
+const router = express.Router();
+
+router.get("/health", (req, res) => {
+  res.json({ success: true, statusCode: 200, message: "API is healthy" });
+});
+
+router.use("/auth", authRoutes);
+router.use("/onboarding", onboardingRoutes);
+router.use("/branches", branchRoutes);
+router.use("/subscription", subscriptionRoutes);
+router.use("/categories", categoryRoutes);
+router.use("/suppliers", supplierRoutes);
+router.use("/subcategories", subcategoryRoutes);
+router.use("/menuitems", menuItemRoutes);
+router.use("/qrOrders", qrOrderRoutes);
+router.use("/tables", tableRoutes);
+router.use("/table-reservations", tableReservationRoutes);
+router.use("/pos", posRoutes);
+router.use("/kot", kotRoutes);
+router.use("/inventory", inventoryRoutes);
+router.use("/recipes", recipeRoutes);
+router.use("/expenses", expenseRoutes);
+router.use("/customers", customerRoutes);
+router.use("/staff", staffRoutes);
+router.use("/roles", roleRoutes);
+router.use("/reports", reportsRoutes);
+
+module.exports = router;

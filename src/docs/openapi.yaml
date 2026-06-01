@@ -1,0 +1,30 @@
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login with restaurant and optional branch context
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a restaurant user
+  /categories:
+    get:
+      tags: [Categories]
+      summary: List categories with pagination, search, filters and sorting
+    post:
+      tags: [Categories]
+      summary: Create a category with optional image upload
+  /subcategories:
+    get:
+      tags: [Subcategories]
+      summary: List subcategories with category filter
+    post:
+      tags: [Subcategories]
+      summary: Create a subcategory
+  /menu-items:
+    get:
+      tags: [Menu Items]
+      summary: List menu items with search, filters, pagination and stock filters
+    post:
+      tags: [Menu Items]
+      summary: Create menu item with image and price fields
