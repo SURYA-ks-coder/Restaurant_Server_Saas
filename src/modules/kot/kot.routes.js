@@ -13,7 +13,7 @@ const router = express.Router();
 router.use(authenticate, enforceBranchAccess, attachTenantScope);
 
 router.get(
-  "/",
+  "/list",
   authorize("kot:read"),
   validate(validator.list),
   controller.list,
@@ -37,7 +37,7 @@ router.patch(
   controller.updateStatus,
 );
 router.patch(
-  "/:id/items/:itemId/status",
+  "/updateItemStatus",
   authorize("kot:update"),
   validate(validator.itemStatus),
   controller.updateItemStatus,

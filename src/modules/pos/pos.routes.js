@@ -10,10 +10,24 @@ const attachTenantScope = require("../../middleware/tenantScope.middleware");
 const validator = require("./validators/pos.validator");
 
 const router = express.Router();
+
+router.post(
+  "/createQRorders",
+  // authorize("pos:create"),
+  // validate(validator.create),
+  controller.create,
+);
+
 router.use(authenticate, enforceBranchAccess, attachTenantScope);
+router.post(
+  "/",
+  authorize("pos:create"),
+  validate(validator.create),
+  controller.create,
+);
 
 router.get(
-  "/",
+  "/list",
   authorize("pos:read"),
   validate(validator.list),
   controller.list,
@@ -24,12 +38,7 @@ router.get(
   validate(validator.idParam),
   controller.get,
 );
-router.post(
-  "/",
-  authorize("pos:create"),
-  validate(validator.create),
-  controller.create,
-);
+
 router.patch(
   "/:id",
   authorize("pos:update"),

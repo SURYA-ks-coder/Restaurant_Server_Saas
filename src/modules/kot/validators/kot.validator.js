@@ -30,8 +30,10 @@ const status = {
 };
 
 const itemStatus = {
-  params: Joi.object({ id: objectId.required(), itemId: objectId.required() }),
+  // params: Joi.object({ }),
   body: Joi.object({
+    id: objectId.required(),
+    itemId: objectId.required(),
     status: Joi.string()
       .valid("pending", "preparing", "ready", "served")
       .required(),

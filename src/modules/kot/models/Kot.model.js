@@ -53,6 +53,8 @@ const kotSchema = new mongoose.Schema(
       enum: ["pending", "preparing", "ready", "served", "cancelled"],
       default: "pending",
     },
+    tableId: { type: mongoose.Schema.Types.ObjectId, ref: "Table" },
+    tableName: String,
   },
   { timestamps: true },
 );

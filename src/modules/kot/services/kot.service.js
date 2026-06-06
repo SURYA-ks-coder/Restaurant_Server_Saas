@@ -92,6 +92,12 @@ const updateKotItemStatus = async ({ id, itemId, payload, tenant, user }) => {
     branchId: tenant.branchId,
   });
   if (!kot) throw new AppError("KOT not found", httpStatus.NOT_FOUND);
+  console.log("Updating KOT item status", {
+    id,
+    itemId,
+    status: payload.status,
+    kot: kot.items,
+  });
   const item = kot.items.id(itemId);
   if (!item) throw new AppError("KOT item not found", httpStatus.NOT_FOUND);
   item.status = payload.status;

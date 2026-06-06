@@ -11,6 +11,12 @@ const { uploadImage } = require("../../middleware/upload.middleware");
 const validator = require("./validators/category.validator");
 
 const router = express.Router();
+router.post(
+  "/QRorders/list",
+  // authorize("category:read"),
+  // validate(validator.list),
+  controller.list,
+);
 
 router.use(authenticate, enforceBranchAccess, attachTenantScope);
 

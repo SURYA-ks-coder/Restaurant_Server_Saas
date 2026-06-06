@@ -37,6 +37,7 @@ const billSchema = new mongoose.Schema(
       required: true,
     },
     tableId: { type: mongoose.Schema.Types.ObjectId, ref: "DiningTable" },
+    tableName: String,
     customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer" },
     items: [billItemSchema],
     taxRate: { type: Number, default: 0 },

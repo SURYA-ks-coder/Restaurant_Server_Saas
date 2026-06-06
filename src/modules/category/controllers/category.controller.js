@@ -46,15 +46,23 @@ const get = asyncHandler(async (req, res) => {
 });
 
 const list = asyncHandler(async (req, res) => {
-  const { items, meta } = await service.listCategories({
-    query: req.query,
-    tenant: req.tenant,
-  });
-  sendSuccess(res, {
-    message: "Categories fetched successfully",
-    data: items,
-    meta,
-  });
+  try {
+    const { items, meta } = await service.listCategories({
+      query: req.query,
+      tenant: req.tenant || {
+        branchId: req.body.branchId,
+        restaurantId: req.body.restaurantId,
+      },
+    });
+    sendSuccess(res, {
+      message: "Categories fetched successfully",
+      data: items,
+      meta,
+    });
+  } catch (error) {
+    console.error("Error creating order:", error);
+    throw error;
+  }
 });
 
 module.exports = { create, update, remove, get, list };

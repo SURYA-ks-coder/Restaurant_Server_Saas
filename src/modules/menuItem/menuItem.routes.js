@@ -12,14 +12,13 @@ const validator = require("./validators/menuItem.validator");
 
 const router = express.Router();
 
-router.use(authenticate, enforceBranchAccess, attachTenantScope);
-
-router.get(
+router.post(
   "/list",
-  authorize("menu:read"),
-  validate(validator.list),
+  // authorize("menu:read"),
+  // validate(validator.list),
   controller.list,
 );
+router.use(authenticate, enforceBranchAccess, attachTenantScope);
 router.get("/low-stock", authorize("menu:read"), controller.lowStock);
 router.get(
   "/getMenuItemById/:id",

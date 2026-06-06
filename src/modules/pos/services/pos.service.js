@@ -12,6 +12,7 @@ const {
   paginationMeta,
 } = require("../../../helpers/queryBuilder");
 const { getIo } = require("../../../sockets");
+const kotRepository = require("../../kot/repositories/kot.repository");
 
 const createInvoiceNumber = () =>
   `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -119,70 +120,89 @@ const deductRecipeStock = async (items, tenant, session) => {
 };
 
 const createBill = async ({ payload, tenant, user }) => {
-  const totals = calculateTotals(payload);
-  const paidAmount = (payload.payments || []).reduce(
-    (sum, payment) => sum + Number(payment.amount || 0),
-    0,
-  );
-  const paymentStatus =
-    payload.paymentStatus ||
-    (paidAmount >= totals.grandTotal && totals.grandTotal > 0
-      ? "paid"
-      : "pending");
-  const status =
-    payload.status || (paymentStatus === "paid" ? "completed" : "open");
-
-  const bill = await runWithOptionalTransaction(async (session) => {
-    const bill = await billRepository.create(
-      {
-        ...payload,
-        ...totals,
-        billNo: payload.billNo || createInvoiceNumber(),
-        restaurantId: tenant.restaurantId,
-        branchId: tenant.branchId,
-        createdBy: user.id,
-        paymentStatus,
-        status,
-      },
-      session,
+  try {
+    const totals = calculateTotals(payload);
+    const paidAmount = (payload.payments || []).reduce(
+      (sum, payment) => sum + Number(payment.amount || 0),
+      0,
     );
+    const paymentStatus =
+      payload.paymentStatus ||
+      (paidAmount >= totals.grandTotal && totals.grandTotal > 0
+        ? "paid"
+        : "pending");
+    const status =
+      payload.status || (paymentStatus === "paid" ? "completed" : "open");
 
-    await deductRecipeStock(payload.items, tenant, session);
+    const bill = await runWithOptionalTransaction(async (session) => {
+      const bill = await billRepository.create(
+        {
+          ...payload,
+          ...totals,
+          billNo: payload.billNo || createInvoiceNumber(),
+          restaurantId: tenant?.restaurantId,
+          branchId: tenant?.branchId,
+          createdBy: user?.id || null,
+          paymentStatus,
+          status,
+        },
+        session,
+      );
 
-    if (payload.customerId) {
-      const customer = await customerRepository.findOne({
-        _id: payload.customerId,
-        restaurantId: tenant.restaurantId,
-        branchId: tenant.branchId,
-      });
-      if (customer) {
-        await customerRepository.updateById(
-          payload.customerId,
-          {
-            totalOrders: (customer.totalOrders || 0) + 1,
-            loyaltyPoints:
-              (customer.loyaltyPoints || 0) +
-              Math.floor(totals.grandTotal / 10),
-          },
-          session,
-        );
+      await deductRecipeStock(payload.items, tenant, session);
+
+      if (payload.orderType === "qr" && payload.tableId) {
+        const kot = await kotRepository.create({
+          billId: bill._id,
+          restaurantId: tenant?.restaurantId,
+          branchId: tenant?.branchId,
+          createdBy: user?.id || null,
+          kitchenSection: "Kitchen",
+          ...payload,
+          status: "pending",
+        });
       }
-    }
 
-    return bill;
-  });
+      if (payload.customerId) {
+        const customer = await customerRepository.findOne({
+          _id: payload.customerId,
+          restaurantId: tenant.restaurantId,
+          branchId: tenant.branchId,
+        });
+        if (customer) {
+          await customerRepository.updateById(
+            payload.customerId,
+            {
+              totalOrders: (customer.totalOrders || 0) + 1,
+              loyaltyPoints:
+                (customer.loyaltyPoints || 0) +
+                Math.floor(totals.grandTotal / 10),
+            },
+            session,
+          );
+        }
+      }
 
-  const io = getIo();
-  if (io)
-    io.to(`branch:${tenant.branchId}`).emit("order:created", {
-      billId: bill._id,
-      branchId: tenant.branchId,
-      status: bill.status,
+      return bill;
     });
 
-  console.log("Order created:", bill);
+    const io = getIo();
+    if (io) {
+      console.log(tenant, "tenant");
 
-  return bill;
+      io.to(`branch:${tenant.branchId}`).emit("order:created", {
+        billId: bill._id,
+        branchId: tenant.branchId,
+        status: bill.status,
+      });
+    }
+    console.log("Order created:", bill);
+
+    return bill;
+  } catch (error) {
+    console.error("Error creating order:", error);
+    throw error;
+  }
 };
 
 const getBill = async ({ id, tenant }) => {

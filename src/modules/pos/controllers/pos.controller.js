@@ -6,12 +6,15 @@ const posService = require("../services/pos.service");
 const create = asyncHandler(async (req, res) => {
   const data = await posService.createBill({
     payload: req.body,
-    tenant: req.tenant,
-    user: req.user,
+    tenant: req.tenant || {
+      branchId: req.body.branchId,
+      restaurantId: req.body.restaurantId,
+    },
+    user: req.user || { id: req.body.userId },
   });
   sendSuccess(res, {
     statusCode: httpStatus.CREATED,
-    message: "Order created",
+    message: "Order created successfully",
     data,
   });
 });
@@ -23,7 +26,11 @@ const update = asyncHandler(async (req, res) => {
     tenant: req.tenant,
     user: req.user,
   });
-  sendSuccess(res, { message: "Order updated", data });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Order updated successfully",
+    data,
+  });
 });
 
 const addItem = asyncHandler(async (req, res) => {
@@ -33,7 +40,11 @@ const addItem = asyncHandler(async (req, res) => {
     tenant: req.tenant,
     user: req.user,
   });
-  sendSuccess(res, { message: "Item added", data });
+  sendSuccess(res, {
+    statusCode: httpStatus.CREATED,
+    message: "Item added successfully",
+    data,
+  });
 });
 
 const updateItemQuantity = asyncHandler(async (req, res) => {
@@ -44,7 +55,11 @@ const updateItemQuantity = asyncHandler(async (req, res) => {
     tenant: req.tenant,
     user: req.user,
   });
-  sendSuccess(res, { message: "Item quantity updated", data });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Item quantity updated successfully",
+    data,
+  });
 });
 
 const removeItem = asyncHandler(async (req, res) => {
@@ -54,7 +69,11 @@ const removeItem = asyncHandler(async (req, res) => {
     tenant: req.tenant,
     user: req.user,
   });
-  sendSuccess(res, { message: "Item removed", data });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Item removed successfully",
+    data,
+  });
 });
 
 const applyDiscount = asyncHandler(async (req, res) => {
@@ -64,7 +83,11 @@ const applyDiscount = asyncHandler(async (req, res) => {
     tenant: req.tenant,
     user: req.user,
   });
-  sendSuccess(res, { message: "Discount applied", data });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Discount applied successfully",
+    data,
+  });
 });
 
 const recordPayment = asyncHandler(async (req, res) => {
@@ -74,7 +97,11 @@ const recordPayment = asyncHandler(async (req, res) => {
     tenant: req.tenant,
     user: req.user,
   });
-  sendSuccess(res, { message: "Payment recorded", data });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Payment recorded successfully",
+    data,
+  });
 });
 
 const holdOrder = asyncHandler(async (req, res) => {
@@ -83,7 +110,11 @@ const holdOrder = asyncHandler(async (req, res) => {
     tenant: req.tenant,
     user: req.user,
   });
-  sendSuccess(res, { message: "Order held", data });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Order held successfully",
+    data,
+  });
 });
 
 const resumeOrder = asyncHandler(async (req, res) => {
@@ -92,7 +123,11 @@ const resumeOrder = asyncHandler(async (req, res) => {
     tenant: req.tenant,
     user: req.user,
   });
-  sendSuccess(res, { message: "Order resumed", data });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Order resumed successfully",
+    data,
+  });
 });
 
 const cancelOrder = asyncHandler(async (req, res) => {
@@ -101,7 +136,11 @@ const cancelOrder = asyncHandler(async (req, res) => {
     tenant: req.tenant,
     user: req.user,
   });
-  sendSuccess(res, { message: "Order cancelled", data });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Order cancelled successfully",
+    data,
+  });
 });
 
 const generateInvoice = asyncHandler(async (req, res) => {
@@ -109,7 +148,11 @@ const generateInvoice = asyncHandler(async (req, res) => {
     id: req.params.id,
     tenant: req.tenant,
   });
-  sendSuccess(res, { message: "Invoice generated", data });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Invoice generated successfully",
+    data,
+  });
 });
 
 const get = asyncHandler(async (req, res) => {
@@ -117,7 +160,11 @@ const get = asyncHandler(async (req, res) => {
     id: req.params.id,
     tenant: req.tenant,
   });
-  sendSuccess(res, { message: "Order fetched", data });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Order fetched successfully",
+    data,
+  });
 });
 
 const list = asyncHandler(async (req, res) => {
@@ -125,7 +172,12 @@ const list = asyncHandler(async (req, res) => {
     query: req.query,
     tenant: req.tenant,
   });
-  sendSuccess(res, { message: "Orders fetched", data: items, meta });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Orders fetched successfully",
+    data: items,
+    meta,
+  });
 });
 
 module.exports = {

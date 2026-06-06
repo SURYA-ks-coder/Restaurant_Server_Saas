@@ -28,7 +28,7 @@ const updateStatus = asyncHandler(async (req, res) => {
 
 const updateItemStatus = asyncHandler(async (req, res) => {
   const data = await kotService.updateKotItemStatus({
-    id: req.params.id,
+    id: req.body.id,
     itemId: req.params.itemId,
     payload: req.body,
     tenant: req.tenant,
