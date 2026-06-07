@@ -18,7 +18,7 @@ const create = asyncHandler(async (req, res) => {
 
 const updateStatus = asyncHandler(async (req, res) => {
   const data = await kotService.updateKotStatus({
-    id: req.params.id,
+    id: req.body.id,
     payload: req.body,
     tenant: req.tenant,
     user: req.user,
@@ -29,7 +29,7 @@ const updateStatus = asyncHandler(async (req, res) => {
 const updateItemStatus = asyncHandler(async (req, res) => {
   const data = await kotService.updateKotItemStatus({
     id: req.body.id,
-    itemId: req.params.itemId,
+    itemId: req.body.itemId,
     payload: req.body,
     tenant: req.tenant,
     user: req.user,

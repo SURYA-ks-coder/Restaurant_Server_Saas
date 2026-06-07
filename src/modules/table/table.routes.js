@@ -25,7 +25,7 @@ router.get(
   controller.activeList,
 );
 router.get(
-  "/:id",
+  "/getTableById/:id",
   authorize("table:read"),
   validate(validator.idParam),
   controller.get,
@@ -37,13 +37,13 @@ router.post(
   controller.create,
 );
 router.patch(
-  "/:id",
+  "/updateTable/:id",
   authorize("table:update"),
   validate(validator.update),
   controller.update,
 );
 router.patch(
-  "/:id/status",
+  "/tableStatusUpdate",
   authorize("table:update"),
   validate(validator.status),
   controller.updateStatus,

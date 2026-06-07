@@ -101,7 +101,20 @@ const updateKotItemStatus = async ({ id, itemId, payload, tenant, user }) => {
   const item = kot.items.id(itemId);
   if (!item) throw new AppError("KOT item not found", httpStatus.NOT_FOUND);
   item.status = payload.status;
+
+  if (payload.status === "preparing") item.preparationStartedAt = new Date();
+  if (payload.status === "ready") item.readyAt = new Date();
   await kot.save();
+  if (payload.status === "preparing" || payload.status === "ready") {
+    updateKotStatus({
+      id,
+      payload: { status: "preparing" },
+      tenant,
+      user,
+    }).catch((err) => {
+      console.error("Error updating KOT status to preparing:", err);
+    });
+  }
   const io = getIo();
   if (io)
     io.to(`branch:${tenant.branchId}`).emit("kot:item:status:updated", {

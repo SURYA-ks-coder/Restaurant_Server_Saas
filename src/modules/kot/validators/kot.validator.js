@@ -21,8 +21,9 @@ const create = {
 };
 
 const status = {
-  params: Joi.object({ id: objectId.required() }),
+  // params: Joi.object({  }),
   body: Joi.object({
+    id: objectId.required(),
     status: Joi.string()
       .valid("pending", "preparing", "ready", "served", "cancelled")
       .required(),

@@ -66,8 +66,8 @@ const billSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["open", "held", "completed", "cancelled"],
-      default: "open",
+      enum: ["pending", "held", "completed", "cancelled"],
+      default: "pending",
     },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },

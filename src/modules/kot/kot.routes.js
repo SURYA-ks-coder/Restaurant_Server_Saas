@@ -31,7 +31,7 @@ router.post(
   controller.create,
 );
 router.patch(
-  "/:id/status",
+  "/KOTstatusUpdate",
   authorize("kot:update"),
   validate(validator.status),
   controller.updateStatus,

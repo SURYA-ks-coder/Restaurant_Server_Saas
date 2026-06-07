@@ -28,7 +28,7 @@ const update = asyncHandler(async (req, res) => {
 
 const updateStatus = asyncHandler(async (req, res) => {
   const data = await tableService.updateTableStatus({
-    id: req.params.id,
+    id: req.body?.id,
     payload: req.body,
     tenant: req.tenant,
     user: req.user,

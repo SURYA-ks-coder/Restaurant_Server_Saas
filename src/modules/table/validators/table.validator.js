@@ -10,8 +10,9 @@ const create = {
       .try(Joi.number().integer().min(1), Joi.string().trim().max(50))
       .required(),
     capacity: Joi.number().integer().min(1).default(2),
-    floor: Joi.string().max(120).allow("", null),
+    floorId: Joi.string().max(120).allow("", null),
     qrCode: Joi.string().max(255).allow("", null),
+    qrCodeEnabled: Joi.boolean().default(false),
     status: Joi.string()
       .valid(...statuses)
       .default("available"),
@@ -27,7 +28,7 @@ const update = {
       Joi.string().trim().max(50),
     ),
     capacity: Joi.number().integer().min(1),
-    floor: Joi.string().max(120).allow("", null),
+    floorId: Joi.string().max(120).allow("", null),
     qrCode: Joi.string().max(255).allow("", null),
     status: Joi.string().valid(...statuses),
   }).min(1),
@@ -56,7 +57,7 @@ const list = {
         "tableName",
         "tableNumber",
         "capacity",
-        "floor",
+        "floorId",
         "status",
       )
       .default("createdAt"),

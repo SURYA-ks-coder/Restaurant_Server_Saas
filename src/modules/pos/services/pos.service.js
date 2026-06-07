@@ -13,6 +13,7 @@ const {
 } = require("../../../helpers/queryBuilder");
 const { getIo } = require("../../../sockets");
 const kotRepository = require("../../kot/repositories/kot.repository");
+const { updateTableStatus } = require("../../table/services/table.service");
 
 const createInvoiceNumber = () =>
   `INV-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -131,8 +132,7 @@ const createBill = async ({ payload, tenant, user }) => {
       (paidAmount >= totals.grandTotal && totals.grandTotal > 0
         ? "paid"
         : "pending");
-    const status =
-      payload.status || (paymentStatus === "paid" ? "completed" : "open");
+    const status = payload.status;
 
     const bill = await runWithOptionalTransaction(async (session) => {
       const bill = await billRepository.create(
@@ -156,10 +156,25 @@ const createBill = async ({ payload, tenant, user }) => {
           billId: bill._id,
           restaurantId: tenant?.restaurantId,
           branchId: tenant?.branchId,
-          createdBy: user?.id || null,
           kitchenSection: "Kitchen",
           ...payload,
           status: "pending",
+          createdBy: user?.id || null,
+          updatedBy: user?.id || null,
+          updatedAt: new Date(),
+        });
+      }
+
+      if (payload.tableId) {
+        const table = await updateTableStatus({
+          id: payload?.tableId,
+          payload: {
+            status: status !== "completed" ? "occupied" : "available",
+            updatedBy: user?.id || null,
+            updatedAt: new Date(),
+          },
+          tenant,
+          user,
         });
       }
 

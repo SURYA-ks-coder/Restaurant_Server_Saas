@@ -17,7 +17,8 @@ const diningTableSchema = new mongoose.Schema(
     tableName: { type: String, required: true, trim: true },
     tableNumber: { type: String, required: true, trim: true, index: true },
     capacity: { type: Number, default: 2 },
-    floor: { type: String, trim: true },
+    floorId: { type: String, trim: true },
+    qrCodeEnabled: { type: Boolean, default: false },
     qrCode: { type: String, trim: true },
     qrCodeDataUrl: { type: String },
     status: {
