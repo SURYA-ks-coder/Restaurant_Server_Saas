@@ -7,16 +7,41 @@ const validator = require("./validators/subscription.validator");
 
 const router = express.Router();
 
-router.get("/plans", validate(validator.listPlans), controller.listPlans);
+router.get("/list", validate(validator.listPlans), controller.listPlans);
 
 router.use(authenticate, attachTenantScope);
 
 router.get("/current", authorize("subscription:read"), controller.current);
-router.post("/select-plan", authorize("subscription:manage"), validate(validator.selectPlan), controller.selectPlan);
-router.post("/upgrade", authorize("subscription:manage"), validate(validator.selectPlan), controller.selectPlan);
-router.post("/downgrade", authorize("subscription:manage"), validate(validator.selectPlan), controller.selectPlan);
+router.post(
+  "/select-plan",
+  authorize("subscription:manage"),
+  validate(validator.selectPlan),
+  controller.selectPlan,
+);
+router.post(
+  "/upgrade",
+  authorize("subscription:manage"),
+  validate(validator.selectPlan),
+  controller.selectPlan,
+);
+router.post(
+  "/downgrade",
+  authorize("subscription:manage"),
+  validate(validator.selectPlan),
+  controller.selectPlan,
+);
 router.post("/expire", authorize("subscription:manage"), controller.expire);
-router.post("/plans", authorize("subscription:manage"), validate(validator.createPlan), controller.createPlan);
-router.patch("/plans/:id", authorize("subscription:manage"), validate(validator.updatePlan), controller.updatePlan);
+router.post(
+  "/plans",
+  authorize("subscription:manage"),
+  validate(validator.createPlan),
+  controller.createPlan,
+);
+router.patch(
+  "/plans/:id",
+  authorize("subscription:manage"),
+  validate(validator.updatePlan),
+  controller.updatePlan,
+);
 
 module.exports = router;

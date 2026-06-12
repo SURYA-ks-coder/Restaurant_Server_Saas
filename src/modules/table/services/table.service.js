@@ -34,7 +34,7 @@ const buildFilter = (query, tenant) => {
     filter.$or = [
       { tableName: regex },
       { tableNumber: regex },
-      { floor: regex },
+      { floorId: regex },
     ];
   }
 
@@ -156,7 +156,7 @@ const listTables = async ({ query, tenant }) => {
     "tableName",
     "tableNumber",
     "capacity",
-    "floor",
+    "floorId",
     "status",
   ]);
   const [items, total] = await tableRepository.paginate({
@@ -178,7 +178,7 @@ const listActiveTables = async ({ query, tenant }) => {
     "tableName",
     "tableNumber",
     "capacity",
-    "floor",
+    "floorId",
     "status",
   ]);
   const filter = buildFilter(query, tenant);

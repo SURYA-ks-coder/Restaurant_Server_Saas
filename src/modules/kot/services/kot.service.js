@@ -75,6 +75,11 @@ const updateKotStatus = async ({ id, payload, tenant, user }) => {
   if (payload.status === "preparing") kot.preparationStartedAt = new Date();
   if (payload.status === "ready") kot.readyAt = new Date();
   kot.updatedBy = user.id;
+  console.log(kot, "kot 1");
+
+  kot.items = kot.items?.map((each) => ({ ...each, status: "ready" }));
+  console.log(kot, "kot 2");
+
   const updated = await kot.save();
   const io = getIo();
   if (io)
@@ -82,6 +87,7 @@ const updateKotStatus = async ({ id, payload, tenant, user }) => {
       kotId: id,
       status: updated.status,
     });
+
   return updated;
 };
 
@@ -92,12 +98,7 @@ const updateKotItemStatus = async ({ id, itemId, payload, tenant, user }) => {
     branchId: tenant.branchId,
   });
   if (!kot) throw new AppError("KOT not found", httpStatus.NOT_FOUND);
-  console.log("Updating KOT item status", {
-    id,
-    itemId,
-    status: payload.status,
-    kot: kot.items,
-  });
+
   const item = kot.items.id(itemId);
   if (!item) throw new AppError("KOT item not found", httpStatus.NOT_FOUND);
   item.status = payload.status;

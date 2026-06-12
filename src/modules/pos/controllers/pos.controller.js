@@ -179,6 +179,23 @@ const list = asyncHandler(async (req, res) => {
     meta,
   });
 });
+const todayOrders = async (req, res, next) => {
+  try {
+    const { items, meta } = await posService.todayOrders({
+      body: req.body,
+      tenant: req.tenant,
+    });
+
+    sendSuccess(res, {
+      statusCode: httpStatus.OK,
+      message: "Orders fetched successfully",
+      data: items,
+      meta,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
   create,
@@ -194,4 +211,5 @@ module.exports = {
   generateInvoice,
   get,
   list,
+  todayOrders,
 };

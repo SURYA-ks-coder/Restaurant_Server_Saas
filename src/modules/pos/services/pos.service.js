@@ -150,8 +150,8 @@ const createBill = async ({ payload, tenant, user }) => {
       );
 
       await deductRecipeStock(payload.items, tenant, session);
-
-      if (payload.orderType === "qr" && payload.tableId) {
+      // payload.orderType === "qr" &&
+      if (payload.tableId) {
         const kot = await kotRepository.create({
           billId: bill._id,
           restaurantId: tenant?.restaurantId,
@@ -247,13 +247,68 @@ const listBills = async ({ query, tenant }) => {
   if (query.orderType) filter.orderType = query.orderType;
   if (query.customerId) filter.customerId = query.customerId;
 
+  // const [items, total] = await billRepository.paginate({
+  //   filter,
+  //   sort,
+  //   skip,
+  //   limit,
+  // });
   const [items, total] = await billRepository.paginate({
     filter,
     sort,
     skip,
     limit,
+    populate: [
+      {
+        path: "tableId",
+        select: "tableName tableNumber",
+      },
+    ],
   });
   return { items, meta: paginationMeta({ total, page, limit }) };
+};
+
+const todayOrders = async ({ body, tenant }) => {
+  try {
+    const page = Number(body?.page) || 1;
+    const limit = Number(body?.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const filter = {
+      restaurantId: tenant.restaurantId,
+      branchId: tenant.branchId,
+      createdAt: {
+        $gte: startOfDay,
+        $lte: endOfDay,
+      },
+    };
+
+    const [items, total] = await billRepository?.paginate({
+      filter,
+      sort: { createdAt: -1 }, // latest first
+      skip,
+      limit,
+      populate: [
+        {
+          path: "tableId",
+          select: "tableName tableNumber",
+        },
+      ],
+    });
+
+    return {
+      items,
+      meta: paginationMeta({ total, page, limit }),
+    };
+  } catch (error) {
+    console.log(error, "Today order error occur");
+  }
 };
 
 const updateBill = async ({ id, payload, tenant, user }) => {
@@ -464,4 +519,5 @@ module.exports = {
   resumeBill,
   cancelBill,
   generateInvoice,
+  todayOrders,
 };

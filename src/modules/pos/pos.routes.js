@@ -32,6 +32,8 @@ router.get(
   validate(validator.list),
   controller.list,
 );
+router.post("/ordersBydate", authorize("pos:read"), controller.todayOrders);
+
 router.get(
   "/:id",
   authorize("pos:read"),

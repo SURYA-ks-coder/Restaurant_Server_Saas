@@ -19,7 +19,7 @@ router.get(
   controller.list,
 );
 router.get(
-  "/active",
+  "/activeTables",
   authorize("table:read"),
   validate(validator.activeList),
   controller.activeList,
