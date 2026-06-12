@@ -22,6 +22,12 @@ router.get(
   controller.list,
 );
 router.get(
+  "/by-role/:roleId",
+  authorize("staff:read"),
+  validate(validator.listByRole),
+  controller.listByRole,
+);
+router.get(
   "/:id",
   authorize("staff:read"),
   validate(validator.idParam),

@@ -6,6 +6,7 @@ const {
   paginationMeta,
 } = require("../../../helpers/queryBuilder");
 const userRepository = require("../../auth/repositories/user.repository");
+const roleRepository = require("../../role/repositories/role.repository");
 
 const createStaff = async ({ payload, tenant, user }) => {
   const exists = await userRepository.findOne({
@@ -88,4 +89,28 @@ const listStaff = async ({ query, tenant }) => {
   return { items, meta: paginationMeta({ total, page, limit }) };
 };
 
-module.exports = { createStaff, updateStaff, deleteStaff, getStaff, listStaff };
+const listStaffByRole = async ({ roleId, query, tenant }) => {
+  const role = await roleRepository.findOne({
+    _id: roleId,
+    restaurantId: tenant.restaurantId,
+  });
+  if (!role) throw new AppError("Role not found", httpStatus.NOT_FOUND);
+
+  const { page, limit, skip } = parsePagination(query);
+  const sort = parseSort(query, ["createdAt", "name", "email"]);
+  const filter = { restaurantId: tenant.restaurantId, isDeleted: false, role: role.name };
+  if (query.status) filter.status = query.status;
+
+  const items = await userRepository.model
+    .find(filter)
+    .sort(sort)
+    .skip(skip)
+    .limit(limit)
+    .select(
+      "-password -refreshTokenHash -tokenVersion -passwordResetTokenHash -passwordResetExpiresAt",
+    );
+  const total = await userRepository.model.countDocuments(filter);
+  return { items, meta: paginationMeta({ total, page, limit }) };
+};
+
+module.exports = { createStaff, updateStaff, deleteStaff, getStaff, listStaff, listStaffByRole };

@@ -54,6 +54,17 @@ const update = {
 
 const idParam = { params: Joi.object({ id: objectId.required() }) };
 
+const listByRole = {
+  params: Joi.object({ roleId: objectId.required() }),
+  query: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(10),
+    status: Joi.string().valid("active", "inactive", "blocked"),
+    sortBy: Joi.string().valid("createdAt", "name", "email").default("createdAt"),
+    sortOrder: Joi.string().valid("asc", "desc").default("desc"),
+  }),
+};
+
 const list = {
   query: Joi.object({
     page: Joi.number().integer().min(1).default(1),
@@ -76,4 +87,4 @@ const list = {
   }),
 };
 
-module.exports = { create, update, idParam, list };
+module.exports = { create, update, idParam, list, listByRole };

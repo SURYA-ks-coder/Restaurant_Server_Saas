@@ -47,4 +47,13 @@ const list = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "Staff fetched", data: items, meta });
 });
 
-module.exports = { create, update, remove, get, list };
+const listByRole = asyncHandler(async (req, res) => {
+  const { items, meta } = await staffService.listStaffByRole({
+    roleId: req.params.roleId,
+    query: req.query,
+    tenant: req.tenant,
+  });
+  sendSuccess(res, { message: "Staff fetched", data: items, meta });
+});
+
+module.exports = { create, update, remove, get, list, listByRole };
