@@ -13,8 +13,18 @@ const createStaff = async ({ payload, tenant, user }) => {
     restaurantId: tenant.restaurantId,
     email: payload.email,
   });
-  if (exists)
-    throw new AppError("Staff email already exists", httpStatus.CONFLICT);
+  if (exists) throw new AppError("Staff email already exists", httpStatus.CONFLICT);
+
+  // Auto-assign default Staff role if no roleId explicitly provided
+  let roleId = payload.roleId || null;
+  if (!roleId) {
+    const defaultRole = await roleRepository.findOne({
+      restaurantId: tenant.restaurantId,
+      roleName: "Staff",
+      status: "active",
+    });
+    if (defaultRole) roleId = defaultRole._id;
+  }
 
   return userRepository.create({
     restaurantId: tenant.restaurantId,
@@ -25,6 +35,7 @@ const createStaff = async ({ payload, tenant, user }) => {
     phone: payload.phone,
     password: payload.password,
     role: payload.role,
+    roleId,
     permissions: payload.permissions || [],
     status: payload.status,
     createdBy: user.id,
@@ -98,7 +109,7 @@ const listStaffByRole = async ({ roleId, query, tenant }) => {
 
   const { page, limit, skip } = parsePagination(query);
   const sort = parseSort(query, ["createdAt", "name", "email"]);
-  const filter = { restaurantId: tenant.restaurantId, isDeleted: false, role: role.name };
+  const filter = { restaurantId: tenant.restaurantId, isDeleted: false, roleId: role._id };
   if (query.status) filter.status = query.status;
 
   const items = await userRepository.model

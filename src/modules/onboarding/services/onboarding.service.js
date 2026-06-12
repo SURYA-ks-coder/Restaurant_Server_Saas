@@ -5,6 +5,7 @@ const Branch = require("../../branch/models/Branch.model");
 const User = require("../../auth/models/User.model");
 const authService = require("../../auth/services/auth.service");
 const subscriptionService = require("../../subscription/services/subscription.service");
+const { seedRestaurantDefaults } = require("../../../database/seedDefaults");
 
 const OWNER_PERMISSIONS = [
   "restaurant:read",
@@ -178,6 +179,12 @@ const registerRestaurant = async ({ payload, file }) => {
     restaurantId: restaurant._id,
     plan,
     userId: owner._id
+  });
+
+  await seedRestaurantDefaults({
+    restaurantId: restaurant._id,
+    branchId: branch._id,
+    ownerId: owner._id,
   });
 
   const refreshedRestaurant = await Restaurant.findById(restaurant._id);
