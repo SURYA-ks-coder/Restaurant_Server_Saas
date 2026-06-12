@@ -7,14 +7,16 @@ const {
   enforceBranchAccess,
 } = require("../../middleware/auth.middleware");
 const attachTenantScope = require("../../middleware/tenantScope.middleware");
-const { enforcePlanLimit } = require("../../middleware/subscription.middleware");
+const {
+  enforcePlanLimit,
+} = require("../../middleware/subscription.middleware");
 const validator = require("./validators/staff.validator");
 
 const router = express.Router();
 router.use(authenticate, enforceBranchAccess, attachTenantScope);
 
 router.get(
-  "/",
+  "/list",
   authorize("staff:read"),
   validate(validator.list),
   controller.list,

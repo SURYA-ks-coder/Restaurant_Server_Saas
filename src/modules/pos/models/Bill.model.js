@@ -12,6 +12,11 @@ const billItemSchema = new mongoose.Schema(
     price: { type: Number, required: true, min: 0 },
     taxAmount: { type: Number, default: 0 },
     total: { type: Number, required: true, min: 0 },
+    status: {
+      type: String,
+      enum: ["pending", "preparing", "ready", "served"],
+      default: "pending",
+    },
   },
   { _id: true },
 );

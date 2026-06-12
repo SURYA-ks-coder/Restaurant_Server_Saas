@@ -75,12 +75,31 @@ const updateKotStatus = async ({ id, payload, tenant, user }) => {
   if (payload.status === "preparing") kot.preparationStartedAt = new Date();
   if (payload.status === "ready") kot.readyAt = new Date();
   kot.updatedBy = user.id;
-  console.log(kot, "kot 1");
 
-  kot.items = kot.items?.map((each) => ({ ...each, status: "ready" }));
-  console.log(kot, "kot 2");
+  kot.items = kot.items?.map((each) => ({ ...each, status: payload.status === "ready" ? "ready" : each.status }));
 
   const updated = await kot.save();
+
+  // Sync bill items status and bill status
+  const bill = await billRepository.findOne({
+    _id: kot.billId,
+    restaurantId: tenant.restaurantId,
+    branchId: tenant.branchId,
+  });
+  if (bill) {
+    const kotItemStatusMap = {};
+    kot.items.forEach((item) => {
+      kotItemStatusMap[item.menuItemId.toString()] = item.status;
+    });
+    bill.items = bill.items.map((billItem) => {
+      const syncedStatus = kotItemStatusMap[billItem.menuItemId.toString()];
+      if (syncedStatus) billItem.status = syncedStatus;
+      return billItem;
+    });
+    if (payload.status === "cancelled") bill.status = "cancelled";
+    await bill.save();
+  }
+
   const io = getIo();
   if (io)
     io.to(`branch:${tenant.branchId}`).emit("kot:status:updated", {
@@ -106,6 +125,24 @@ const updateKotItemStatus = async ({ id, itemId, payload, tenant, user }) => {
   if (payload.status === "preparing") item.preparationStartedAt = new Date();
   if (payload.status === "ready") item.readyAt = new Date();
   await kot.save();
+
+  // Sync matching bill item status
+  const bill = await billRepository.findOne({
+    _id: kot.billId,
+    restaurantId: tenant.restaurantId,
+    branchId: tenant.branchId,
+  });
+  if (bill) {
+    const menuItemIdStr = item.menuItemId.toString();
+    const billItem = bill.items.find(
+      (bi) => bi.menuItemId.toString() === menuItemIdStr,
+    );
+    if (billItem) {
+      billItem.status = payload.status;
+      await bill.save();
+    }
+  }
+
   if (payload.status === "preparing" || payload.status === "ready") {
     updateKotStatus({
       id,
