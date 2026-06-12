@@ -18,6 +18,7 @@ const userSchema = new mongoose.Schema(
       enum: ["super_admin", "owner", "manager", "cashier", "chef", "waiter", "inventory_staff"],
       default: "owner"
     },
+    roleId: { type: mongoose.Schema.Types.ObjectId, ref: "Role", default: null },
     permissions: [{ type: String, trim: true }],
     status: { type: String, enum: ["active", "inactive", "blocked"], default: "active" },
     refreshTokenHash: { type: String, select: false },

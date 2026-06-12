@@ -12,14 +12,15 @@ const validator = require("./validators/role.validator");
 const router = express.Router();
 router.use(authenticate, enforceBranchAccess, attachTenantScope);
 
+router.get("/menus", controller.getMenuList);
 router.get(
-  "/",
+  "/list",
   authorize("role:read"),
   validate(validator.list),
   controller.list,
 );
 router.get(
-  "/:id",
+  "/getRoleById/:id",
   authorize("role:read"),
   validate(validator.idParam),
   controller.get,

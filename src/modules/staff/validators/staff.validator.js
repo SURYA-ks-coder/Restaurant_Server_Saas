@@ -20,6 +20,7 @@ const create = {
         "inventory_staff",
       )
       .required(),
+    roleId: objectId.allow(null),
     permissions: Joi.array().items(Joi.string().trim()).default([]),
     branchIds: Joi.array().items(objectId).default([]),
     defaultBranchId: objectId.allow(null),
@@ -45,6 +46,7 @@ const update = {
       "waiter",
       "inventory_staff",
     ),
+    roleId: objectId.allow(null),
     permissions: Joi.array().items(Joi.string().trim()),
     branchIds: Joi.array().items(objectId),
     defaultBranchId: objectId,

@@ -1,4 +1,4 @@
-const httpStatus = require("http-status");
+﻿const httpStatus = require("http-status");
 const AppError = require("../../../utils/AppError");
 const {
   parsePagination,
@@ -7,18 +7,22 @@ const {
 } = require("../../../helpers/queryBuilder");
 const roleRepository = require("../repositories/role.repository");
 
-const createRole = async ({ payload, tenant, user }) => {
+const createRole = async ({ payload, tenant }) => {
   const exists = await roleRepository.findOne({
     restaurantId: tenant.restaurantId,
-    name: payload.name,
+    roleName: payload.roleName,
   });
-  if (exists)
-    throw new AppError("Role name already exists", httpStatus.CONFLICT);
-  return roleRepository.create({
-    ...payload,
-    restaurantId: tenant.restaurantId,
-    createdBy: user.id,
-  });
+  if (exists) throw new AppError("Role name already exists", httpStatus.CONFLICT);
+
+  try {
+    return await roleRepository.create({
+      ...payload,
+      restaurantId: tenant.restaurantId,
+    });
+  } catch (error) {
+    if (error.code === 11000) throw new AppError("Role name already exists", httpStatus.CONFLICT);
+    throw error;
+  }
 };
 
 const updateRole = async ({ id, payload, tenant, user }) => {
@@ -50,10 +54,10 @@ const getRole = async ({ id, tenant }) => {
 
 const listRoles = async ({ query, tenant }) => {
   const { page, limit, skip } = parsePagination(query);
-  const sort = parseSort(query, ["createdAt", "name"]);
+  const sort = parseSort(query, ["createdAt", "roleName"]);
   const filter = { restaurantId: tenant.restaurantId };
   if (query.status) filter.status = query.status;
-  if (query.search) filter.name = { $regex: query.search, $options: "i" };
+  if (query.search) filter.roleName = { $regex: query.search, $options: "i" };
   const [items, total] = await roleRepository.paginate({
     filter,
     sort,

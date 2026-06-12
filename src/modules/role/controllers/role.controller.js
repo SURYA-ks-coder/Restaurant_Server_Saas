@@ -2,6 +2,7 @@ const httpStatus = require("http-status");
 const asyncHandler = require("../../../utils/asyncHandler");
 const { sendSuccess } = require("../../../helpers/apiResponse");
 const roleService = require("../services/role.service");
+const { menuList } = require("../../../utils/menuList");
 
 const create = asyncHandler(async (req, res) => {
   const data = await roleService.createRole({
@@ -47,4 +48,8 @@ const list = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "Roles fetched", data: items, meta });
 });
 
-module.exports = { create, update, remove, get, list };
+const getMenuList = asyncHandler(async (req, res) => {
+  sendSuccess(res, { message: "Menu list fetched", data: menuList });
+});
+
+module.exports = { create, update, remove, get, list, getMenuList };
