@@ -3,30 +3,42 @@ const Joi = require("joi");
 const objectId = Joi.string().hex().length(24);
 const phone = Joi.string().pattern(/^[0-9+\-\s]{7,20}$/);
 
+const staffRole = Joi.string().valid(
+  "super_admin",
+  "owner",
+  "manager",
+  "cashier",
+  "chef",
+  "waiter",
+  "inventory_staff",
+);
+
 const create = {
   body: Joi.object({
     name: Joi.string().min(2).max(120).required(),
     email: Joi.string().email().required(),
     phone: phone.allow("", null),
     password: Joi.string().min(8).required(),
-    role: Joi.string()
-      .valid(
-        "super_admin",
-        "owner",
-        "manager",
-        "cashier",
-        "chef",
-        "waiter",
-        "inventory_staff",
-      )
-      .required(),
+    role: staffRole.required(),
     roleId: objectId.allow(null),
+    departmentId: objectId.allow(null),
+    shiftId: objectId.allow(null),
     permissions: Joi.array().items(Joi.string().trim()).default([]),
     branchIds: Joi.array().items(objectId).default([]),
     defaultBranchId: objectId.allow(null),
-    status: Joi.string()
-      .valid("active", "inactive", "blocked")
-      .default("active"),
+    employeeCode: Joi.string().max(50).allow("", null),
+    designationId: objectId.allow(null),
+    gender: Joi.string().valid("male", "female", "other").allow(null),
+    dateOfBirth: Joi.date().iso().allow(null),
+    dateOfJoining: Joi.date().iso().allow(null),
+    address: Joi.string().max(500).allow("", null),
+    profileImage: Joi.string().uri().allow("", null),
+    emergencyContact: Joi.object({
+      name: Joi.string().max(120).allow("", null),
+      phone: phone.allow("", null),
+      relation: Joi.string().max(80).allow("", null),
+    }).allow(null),
+    status: Joi.string().valid("active", "inactive", "blocked").default("active"),
   }),
 };
 
@@ -37,19 +49,25 @@ const update = {
     email: Joi.string().email(),
     phone: phone.allow("", null),
     password: Joi.string().min(8),
-    role: Joi.string().valid(
-      "super_admin",
-      "owner",
-      "manager",
-      "cashier",
-      "chef",
-      "waiter",
-      "inventory_staff",
-    ),
+    role: staffRole,
     roleId: objectId.allow(null),
+    departmentId: objectId.allow(null),
+    shiftId: objectId.allow(null),
     permissions: Joi.array().items(Joi.string().trim()),
     branchIds: Joi.array().items(objectId),
     defaultBranchId: objectId,
+    employeeCode: Joi.string().max(50).allow("", null),
+    designationId: objectId.allow(null),
+    gender: Joi.string().valid("male", "female", "other").allow(null),
+    dateOfBirth: Joi.date().iso().allow(null),
+    dateOfJoining: Joi.date().iso().allow(null),
+    address: Joi.string().max(500).allow("", null),
+    profileImage: Joi.string().uri().allow("", null),
+    emergencyContact: Joi.object({
+      name: Joi.string().max(120).allow("", null),
+      phone: phone.allow("", null),
+      relation: Joi.string().max(80).allow("", null),
+    }).allow(null),
     status: Joi.string().valid("active", "inactive", "blocked"),
   }).min(1),
 };

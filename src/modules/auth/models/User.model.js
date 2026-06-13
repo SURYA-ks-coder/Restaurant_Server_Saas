@@ -43,7 +43,33 @@ const userSchema = new mongoose.Schema(
       ref: "Role",
       default: null,
     },
+    departmentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Department",
+      default: null,
+    },
+    shiftId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Shift",
+      default: null,
+    },
     permissions: [{ type: String, trim: true }],
+    employeeCode: { type: String, trim: true },
+    designationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Designation",
+      default: null,
+    },
+    gender: { type: String, enum: ["male", "female", "other"], default: null },
+    dateOfBirth: { type: Date, default: null },
+    dateOfJoining: { type: Date, default: null },
+    address: { type: String, trim: true },
+    profileImage: { type: String, trim: true },
+    emergencyContact: {
+      name: { type: String, trim: true },
+      phone: { type: String, trim: true },
+      relation: { type: String, trim: true },
+    },
     status: {
       type: String,
       enum: ["active", "inactive", "blocked"],
