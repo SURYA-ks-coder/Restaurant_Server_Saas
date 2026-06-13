@@ -56,4 +56,14 @@ const listByRole = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "Staff fetched", data: items, meta });
 });
 
-module.exports = { create, update, remove, get, list, listByRole };
+const assignRole = asyncHandler(async (req, res) => {
+  const data = await staffService.assignRoleToStaff({
+    staffIds: req.body.staffIds,
+    roleId: req.body.roleId,
+    tenant: req.tenant,
+    user: req.user,
+  });
+  sendSuccess(res, { message: "Role assigned to staff", data });
+});
+
+module.exports = { create, update, remove, get, list, listByRole, assignRole };

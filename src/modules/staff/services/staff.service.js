@@ -13,7 +13,8 @@ const createStaff = async ({ payload, tenant, user }) => {
     restaurantId: tenant.restaurantId,
     email: payload.email,
   });
-  if (exists) throw new AppError("Staff email already exists", httpStatus.CONFLICT);
+  if (exists)
+    throw new AppError("Staff email already exists", httpStatus.CONFLICT);
 
   // Auto-assign default Staff role if no roleId explicitly provided
   let roleId = payload.roleId || null;
@@ -109,7 +110,11 @@ const listStaffByRole = async ({ roleId, query, tenant }) => {
 
   const { page, limit, skip } = parsePagination(query);
   const sort = parseSort(query, ["createdAt", "name", "email"]);
-  const filter = { restaurantId: tenant.restaurantId, isDeleted: false, roleId: role._id };
+  const filter = {
+    restaurantId: tenant.restaurantId,
+    isDeleted: false,
+    roleId: role._id,
+  };
   if (query.status) filter.status = query.status;
 
   const items = await userRepository.model
@@ -124,4 +129,42 @@ const listStaffByRole = async ({ roleId, query, tenant }) => {
   return { items, meta: paginationMeta({ total, page, limit }) };
 };
 
-module.exports = { createStaff, updateStaff, deleteStaff, getStaff, listStaff, listStaffByRole };
+const assignRoleToStaff = async ({ staffIds, roleId, tenant, user }) => {
+  const role = await roleRepository.findOne({
+    _id: roleId,
+    restaurantId: tenant.restaurantId,
+    status: "active",
+  });
+  if (!role) throw new AppError("Role not found", httpStatus.NOT_FOUND);
+
+  const result = await userRepository.model.updateMany(
+    {
+      _id: { $in: staffIds },
+      restaurantId: tenant.restaurantId,
+      isDeleted: false,
+    },
+    {
+      $set: {
+        roleId: role._id,
+        permissions: role.permissions,
+        updatedBy: user.id,
+      },
+    },
+  );
+
+  return {
+    assigned: result.modifiedCount,
+    roleId: role._id,
+    roleName: role.roleName,
+  };
+};
+
+module.exports = {
+  createStaff,
+  updateStaff,
+  deleteStaff,
+  getStaff,
+  listStaff,
+  listStaffByRole,
+  assignRoleToStaff,
+};

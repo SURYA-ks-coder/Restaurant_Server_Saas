@@ -41,6 +41,12 @@ router.post(
   controller.create,
 );
 router.patch(
+  "/assign-role",
+  authorize("staff:update"),
+  validate(validator.assignRole),
+  controller.assignRole,
+);
+router.patch(
   "/:id",
   authorize("staff:update"),
   validate(validator.update),

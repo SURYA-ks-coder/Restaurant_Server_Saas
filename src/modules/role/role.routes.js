@@ -32,7 +32,7 @@ router.post(
   controller.create,
 );
 router.patch(
-  "/:id",
+  "/updateRole/:id",
   authorize("role:update"),
   validate(validator.update),
   controller.update,

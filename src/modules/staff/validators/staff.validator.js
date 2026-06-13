@@ -89,4 +89,11 @@ const list = {
   }),
 };
 
-module.exports = { create, update, idParam, list, listByRole };
+const assignRole = {
+  body: Joi.object({
+    employeeIds: Joi.array().items(objectId.required()).min(1).required(),
+    roleId: objectId.required(),
+  }),
+};
+
+module.exports = { create, update, idParam, list, listByRole, assignRole };
