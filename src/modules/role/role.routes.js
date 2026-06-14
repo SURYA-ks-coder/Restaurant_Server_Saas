@@ -38,7 +38,7 @@ router.patch(
   controller.update,
 );
 router.delete(
-  "/:id",
+  "/deleteRole/:id",
   authorize("role:delete"),
   validate(validator.idParam),
   controller.remove,
