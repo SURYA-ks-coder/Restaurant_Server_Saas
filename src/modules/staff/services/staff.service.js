@@ -75,23 +75,43 @@ const deleteStaff = async ({ id, tenant }) => {
   return userRepository.updateById(id, { isDeleted: true, status: "inactive" });
 };
 
+const STAFF_POPULATE = [
+  { path: "departmentId", select: "departmentName" },
+  { path: "designationId", select: "designationName" },
+  { path: "shiftId", select: "shiftName startTime endTime" },
+  { path: "roleId", select: "roleName" },
+];
+
+const STAFF_SELECT =
+  "-password -refreshTokenHash -tokenVersion -passwordResetTokenHash -passwordResetExpiresAt";
+
 const getStaff = async ({ id, tenant }) => {
-  const staff = await userRepository
-    .findOne({ _id: id, restaurantId: tenant.restaurantId, isDeleted: false })
-    .select(
-      "-password -refreshTokenHash -tokenVersion -passwordResetTokenHash -passwordResetExpiresAt",
-    );
-  if (!staff)
-    throw new AppError("Staff member not found", httpStatus.NOT_FOUND);
+  const staff = await userRepository.model
+    .findOne({
+      _id: id,
+      restaurantId: tenant.restaurantId,
+      branchIds: tenant.branchId,
+      isDeleted: false,
+    })
+    .select(STAFF_SELECT)
+    .populate(STAFF_POPULATE);
+  if (!staff) throw new AppError("Staff member not found", httpStatus.NOT_FOUND);
   return staff;
 };
 
 const listStaff = async ({ query, tenant }) => {
   const { page, limit, skip } = parsePagination(query);
   const sort = parseSort(query, ["createdAt", "name", "email"]);
-  const filter = { restaurantId: tenant.restaurantId, isDeleted: false };
+  const filter = {
+    restaurantId: tenant.restaurantId,
+    branchIds: tenant.branchId,
+    isDeleted: false,
+  };
   if (query.status) filter.status = query.status;
   if (query.role) filter.role = query.role;
+  if (query.departmentId) filter.departmentId = query.departmentId;
+  if (query.designationId) filter.designationId = query.designationId;
+  if (query.shiftId) filter.shiftId = query.shiftId;
   if (query.search)
     filter.$or = [
       { name: { $regex: query.search, $options: "i" } },
@@ -99,15 +119,16 @@ const listStaff = async ({ query, tenant }) => {
       { phone: { $regex: query.search, $options: "i" } },
     ];
 
-  const items = await userRepository.model
-    .find(filter)
-    .sort(sort)
-    .skip(skip)
-    .limit(limit)
-    .select(
-      "-password -refreshTokenHash -tokenVersion -passwordResetTokenHash -passwordResetExpiresAt",
-    );
-  const total = await userRepository.model.countDocuments(filter);
+  const [items, total] = await Promise.all([
+    userRepository.model
+      .find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .select(STAFF_SELECT)
+      .populate(STAFF_POPULATE),
+    userRepository.model.countDocuments(filter),
+  ]);
   return { items, meta: paginationMeta({ total, page, limit }) };
 };
 
@@ -122,20 +143,22 @@ const listStaffByRole = async ({ roleId, query, tenant }) => {
   const sort = parseSort(query, ["createdAt", "name", "email"]);
   const filter = {
     restaurantId: tenant.restaurantId,
+    branchIds: tenant.branchId,
     isDeleted: false,
     roleId: role._id,
   };
   if (query.status) filter.status = query.status;
 
-  const items = await userRepository.model
-    .find(filter)
-    .sort(sort)
-    .skip(skip)
-    .limit(limit)
-    .select(
-      "-password -refreshTokenHash -tokenVersion -passwordResetTokenHash -passwordResetExpiresAt",
-    );
-  const total = await userRepository.model.countDocuments(filter);
+  const [items, total] = await Promise.all([
+    userRepository.model
+      .find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .select(STAFF_SELECT)
+      .populate(STAFF_POPULATE),
+    userRepository.model.countDocuments(filter),
+  ]);
   return { items, meta: paginationMeta({ total, page, limit }) };
 };
 

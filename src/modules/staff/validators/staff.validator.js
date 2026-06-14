@@ -104,6 +104,9 @@ const list = {
       "waiter",
       "inventory_staff",
     ),
+    departmentId: objectId,
+    designationId: objectId,
+    shiftId: objectId,
     sortBy: Joi.string()
       .valid("createdAt", "name", "email")
       .default("createdAt"),
