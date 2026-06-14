@@ -35,4 +35,31 @@ const checkDomain = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "Domain availability checked", data });
 });
 
-module.exports = { register, setupWizard, uploadLogo, checkDomain };
+const list = asyncHandler(async (req, res) => {
+  const { items, meta } = await service.listRestaurants({ query: req.query });
+  sendSuccess(res, { message: "Restaurants fetched", data: items, meta });
+});
+
+const get = asyncHandler(async (req, res) => {
+  const data = await service.getRestaurant({ id: req.params.id });
+  sendSuccess(res, { message: "Restaurant fetched", data });
+});
+
+const update = asyncHandler(async (req, res) => {
+  const data = await service.updateRestaurant({
+    id: req.params.id,
+    payload: req.body,
+    file: req.file,
+  });
+  sendSuccess(res, { message: "Restaurant updated", data });
+});
+
+const updateStatus = asyncHandler(async (req, res) => {
+  const data = await service.updateRestaurantStatus({
+    id: req.params.id,
+    status: req.body.status,
+  });
+  sendSuccess(res, { message: "Restaurant status updated", data });
+});
+
+module.exports = { register, setupWizard, uploadLogo, checkDomain, list, get, update, updateStatus };

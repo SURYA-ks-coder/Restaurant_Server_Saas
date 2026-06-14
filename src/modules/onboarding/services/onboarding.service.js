@@ -6,6 +6,11 @@ const User = require("../../auth/models/User.model");
 const authService = require("../../auth/services/auth.service");
 const subscriptionService = require("../../subscription/services/subscription.service");
 const { seedRestaurantDefaults } = require("../../../database/seedDefaults");
+const {
+  parsePagination,
+  parseSort,
+  paginationMeta,
+} = require("../../../helpers/queryBuilder");
 
 const OWNER_PERMISSIONS = [
   "restaurant:read",
@@ -51,7 +56,7 @@ const OWNER_PERMISSIONS = [
   "role:read",
   "role:create",
   "role:update",
-  "role:delete"
+  "role:delete",
 ];
 
 const slugify = (value) =>
@@ -64,7 +69,11 @@ const slugify = (value) =>
 
 const buildUniqueSlug = async (restaurantName, requestedSlug) => {
   const base = slugify(requestedSlug || restaurantName);
-  if (!base) throw new AppError("Restaurant slug could not be generated", httpStatus.BAD_REQUEST);
+  if (!base)
+    throw new AppError(
+      "Restaurant slug could not be generated",
+      httpStatus.BAD_REQUEST,
+    );
   let slug = base;
   let counter = 2;
   while (await Restaurant.exists({ slug })) {
@@ -79,11 +88,11 @@ const normalizeBranchPayload = (payload) => ({
   branchCode: payload.branch?.branchCode || payload.branchCode || "MAIN",
   address: payload.branch?.address || payload.branchAddress || payload.address,
   phone: payload.branch?.phone || payload.branchPhone || payload.mobileNumber,
-  manager: payload.branch?.manager
+  manager: payload.branch?.manager,
 });
 
 const publicRestaurant = (restaurant) => ({
-  id: restaurant._id,
+  _id: restaurant._id,
   restaurantName: restaurant.restaurantName || restaurant.name,
   slug: restaurant.slug,
   subdomain: restaurant.subdomain,
@@ -105,19 +114,34 @@ const publicRestaurant = (restaurant) => ({
   trialEndDate: restaurant.trialEndDate,
   status: restaurant.status,
   setupStatus: restaurant.setupStatus,
-  onboardingSteps: restaurant.onboardingSteps
+  onboardingSteps: restaurant.onboardingSteps,
 });
 
 const registerRestaurant = async ({ payload, file }) => {
-  const emailExists = await User.exists({ email: payload.email, isDeleted: false });
-  if (emailExists) throw new AppError("Owner email is already registered", httpStatus.CONFLICT);
+  const emailExists = await User.exists({
+    email: payload.email,
+    isDeleted: false,
+  });
+  if (emailExists)
+    throw new AppError(
+      "Owner email is already registered",
+      httpStatus.CONFLICT,
+    );
 
-  const slug = await buildUniqueSlug(payload.restaurantName, payload.slug || payload.subdomain);
-  if (payload.customDomain && (await Restaurant.exists({ customDomain: payload.customDomain }))) {
+  const slug = await buildUniqueSlug(
+    payload.restaurantName,
+    payload.slug || payload.subdomain,
+  );
+  if (
+    payload.customDomain &&
+    (await Restaurant.exists({ customDomain: payload.customDomain }))
+  ) {
     throw new AppError("Custom domain is already in use", httpStatus.CONFLICT);
   }
 
-  const plan = await subscriptionService.getPlanByNameOrId(payload.subscriptionPlan);
+  const plan = await subscriptionService.getPlanByNameOrId(
+    payload.subscriptionPlan,
+  );
   const restaurant = await Restaurant.create({
     restaurantName: payload.restaurantName,
     name: payload.restaurantName,
@@ -144,8 +168,8 @@ const registerRestaurant = async ({ payload, file }) => {
       gstDetails: Boolean(payload.GSTNumber),
       logo: Boolean(file),
       branch: true,
-      domain: Boolean(payload.customDomain || slug)
-    }
+      domain: Boolean(payload.customDomain || slug),
+    },
   });
 
   const branchPayload = normalizeBranchPayload(payload);
@@ -154,7 +178,7 @@ const registerRestaurant = async ({ payload, file }) => {
     ...branchPayload,
     code: branchPayload.branchCode,
     isDefault: true,
-    status: "active"
+    status: "active",
   });
 
   const owner = await User.create({
@@ -168,7 +192,7 @@ const registerRestaurant = async ({ payload, file }) => {
     password: payload.password,
     role: "owner",
     permissions: OWNER_PERMISSIONS,
-    status: "active"
+    status: "active",
   });
   if (!branch.manager) {
     branch.manager = owner._id;
@@ -178,7 +202,7 @@ const registerRestaurant = async ({ payload, file }) => {
   await subscriptionService.applyPlanToRestaurant({
     restaurantId: restaurant._id,
     plan,
-    userId: owner._id
+    userId: owner._id,
   });
 
   await seedRestaurantDefaults({
@@ -188,32 +212,49 @@ const registerRestaurant = async ({ payload, file }) => {
   });
 
   const refreshedRestaurant = await Restaurant.findById(restaurant._id);
-  const authUser = await User.findById(owner._id).select("+password +refreshTokenHash +tokenVersion");
+  const authUser = await User.findById(owner._id).select(
+    "+password +refreshTokenHash +tokenVersion",
+  );
   const auth = await authService.login({
     restaurantId: restaurant._id,
     email: owner.email,
-    password: payload.password
+    password: payload.password,
   });
 
   return {
     restaurant: publicRestaurant(refreshedRestaurant),
     branch,
     owner: authService.publicUser(authUser),
-    tokens: auth.tokens
+    tokens: auth.tokens,
   };
 };
 
 const updateSetupWizard = async ({ tenant, user, payload, file }) => {
   const restaurant = await Restaurant.findById(tenant.restaurantId);
-  if (!restaurant) throw new AppError("Restaurant not found", httpStatus.NOT_FOUND);
+  if (!restaurant)
+    throw new AppError("Restaurant not found", httpStatus.NOT_FOUND);
 
   if (payload.subdomain && payload.subdomain !== restaurant.subdomain) {
-    const exists = await Restaurant.exists({ _id: { $ne: restaurant._id }, subdomain: payload.subdomain });
-    if (exists) throw new AppError("Subdomain is already in use", httpStatus.CONFLICT);
+    const exists = await Restaurant.exists({
+      _id: { $ne: restaurant._id },
+      subdomain: payload.subdomain,
+    });
+    if (exists)
+      throw new AppError("Subdomain is already in use", httpStatus.CONFLICT);
   }
-  if (payload.customDomain && payload.customDomain !== restaurant.customDomain) {
-    const exists = await Restaurant.exists({ _id: { $ne: restaurant._id }, customDomain: payload.customDomain });
-    if (exists) throw new AppError("Custom domain is already in use", httpStatus.CONFLICT);
+  if (
+    payload.customDomain &&
+    payload.customDomain !== restaurant.customDomain
+  ) {
+    const exists = await Restaurant.exists({
+      _id: { $ne: restaurant._id },
+      customDomain: payload.customDomain,
+    });
+    if (exists)
+      throw new AppError(
+        "Custom domain is already in use",
+        httpStatus.CONFLICT,
+      );
   }
 
   const update = { setupStatus: "in_progress" };
@@ -228,7 +269,7 @@ const updateSetupWizard = async ({ tenant, user, payload, file }) => {
     "currency",
     "timezone",
     "customDomain",
-    "subdomain"
+    "subdomain",
   ];
   fields.forEach((field) => {
     if (payload[field] !== undefined) update[field] = payload[field];
@@ -244,11 +285,13 @@ const updateSetupWizard = async ({ tenant, user, payload, file }) => {
   update["onboardingSteps.restaurantProfile"] = true;
 
   if (payload.subscriptionPlan) {
-    const plan = await subscriptionService.getPlanByNameOrId(payload.subscriptionPlan);
+    const plan = await subscriptionService.getPlanByNameOrId(
+      payload.subscriptionPlan,
+    );
     await subscriptionService.applyPlanToRestaurant({
       restaurantId: tenant.restaurantId,
       plan,
-      userId: user.id
+      userId: user.id,
     });
   }
 
@@ -256,13 +299,13 @@ const updateSetupWizard = async ({ tenant, user, payload, file }) => {
     const existingDefault = await Branch.findOne({
       restaurantId: tenant.restaurantId,
       isDefault: true,
-      isDeleted: false
+      isDeleted: false,
     });
     if (existingDefault) {
       await Branch.findByIdAndUpdate(existingDefault._id, {
         ...payload.branch,
         code: payload.branch.branchCode || existingDefault.code,
-        updatedBy: user.id
+        updatedBy: user.id,
       });
     } else {
       await Branch.create({
@@ -270,18 +313,23 @@ const updateSetupWizard = async ({ tenant, user, payload, file }) => {
         ...payload.branch,
         code: payload.branch.branchCode,
         isDefault: true,
-        createdBy: user.id
+        createdBy: user.id,
       });
     }
     update["onboardingSteps.branch"] = true;
   }
 
-  const updated = await Restaurant.findByIdAndUpdate(tenant.restaurantId, update, {
-    new: true,
-    runValidators: true
-  });
+  const updated = await Restaurant.findByIdAndUpdate(
+    tenant.restaurantId,
+    update,
+    {
+      new: true,
+      runValidators: true,
+    },
+  );
   const steps = updated.onboardingSteps || {};
-  const completed = steps.restaurantProfile && steps.branch && steps.subscription;
+  const completed =
+    steps.restaurantProfile && steps.branch && steps.subscription;
   if (completed && updated.setupStatus !== "completed") {
     updated.setupStatus = "completed";
     await updated.save();
@@ -290,22 +338,131 @@ const updateSetupWizard = async ({ tenant, user, payload, file }) => {
 };
 
 const uploadLogo = async ({ tenant, file }) => {
-  if (!file) throw new AppError("Logo file is required", httpStatus.BAD_REQUEST);
+  if (!file)
+    throw new AppError("Logo file is required", httpStatus.BAD_REQUEST);
   const restaurant = await Restaurant.findByIdAndUpdate(
     tenant.restaurantId,
     { logo: `/uploads/${file.filename}`, "onboardingSteps.logo": true },
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
-  if (!restaurant) throw new AppError("Restaurant not found", httpStatus.NOT_FOUND);
+  if (!restaurant)
+    throw new AppError("Restaurant not found", httpStatus.NOT_FOUND);
   return publicRestaurant(restaurant);
 };
 
 const checkDomainAvailability = async ({ slug, subdomain, customDomain }) => {
   const checks = {};
   if (slug) checks.slugAvailable = !(await Restaurant.exists({ slug }));
-  if (subdomain) checks.subdomainAvailable = !(await Restaurant.exists({ subdomain }));
-  if (customDomain) checks.customDomainAvailable = !(await Restaurant.exists({ customDomain }));
+  if (subdomain)
+    checks.subdomainAvailable = !(await Restaurant.exists({ subdomain }));
+  if (customDomain)
+    checks.customDomainAvailable = !(await Restaurant.exists({ customDomain }));
   return checks;
+};
+
+const getRestaurant = async ({ id }) => {
+  const restaurant = await Restaurant.findOne({ _id: id, isDeleted: false });
+  if (!restaurant)
+    throw new AppError("Restaurant not found", httpStatus.NOT_FOUND);
+  return publicRestaurant(restaurant);
+};
+
+const updateRestaurant = async ({ id, payload, file }) => {
+  const restaurant = await Restaurant.findOne({ _id: id, isDeleted: false });
+  if (!restaurant)
+    throw new AppError("Restaurant not found", httpStatus.NOT_FOUND);
+
+  if (payload.subdomain && payload.subdomain !== restaurant.subdomain) {
+    const exists = await Restaurant.exists({
+      _id: { $ne: id },
+      subdomain: payload.subdomain,
+    });
+    if (exists)
+      throw new AppError("Subdomain is already in use", httpStatus.CONFLICT);
+  }
+  if (
+    payload.customDomain &&
+    payload.customDomain !== restaurant.customDomain
+  ) {
+    const exists = await Restaurant.exists({
+      _id: { $ne: id },
+      customDomain: payload.customDomain,
+    });
+    if (exists)
+      throw new AppError(
+        "Custom domain is already in use",
+        httpStatus.CONFLICT,
+      );
+  }
+
+  const update = {};
+  const fields = [
+    "restaurantName",
+    "ownerName",
+    "mobileNumber",
+    "email",
+    "GSTNumber",
+    "address",
+    "city",
+    "state",
+    "country",
+    "pincode",
+    "currency",
+    "timezone",
+    "subdomain",
+    "customDomain",
+  ];
+  fields.forEach((f) => {
+    if (payload[f] !== undefined) update[f] = payload[f];
+  });
+  if (payload.restaurantName) update.name = payload.restaurantName;
+  if (file) update.logo = `/uploads/${file.filename}`;
+  if (payload.customDomain) update.domainStatus = "pending";
+
+  const updated = await Restaurant.findByIdAndUpdate(id, update, {
+    new: true,
+    runValidators: true,
+  });
+  return publicRestaurant(updated);
+};
+
+const updateRestaurantStatus = async ({ id, status }) => {
+  const restaurant = await Restaurant.findOne({ _id: id, isDeleted: false });
+  if (!restaurant)
+    throw new AppError("Restaurant not found", httpStatus.NOT_FOUND);
+  const updated = await Restaurant.findByIdAndUpdate(
+    id,
+    { status },
+    { new: true, runValidators: true },
+  );
+  return publicRestaurant(updated);
+};
+
+const listRestaurants = async ({ query }) => {
+  const { page, limit, skip } = parsePagination(query);
+  const sort = parseSort(query, ["createdAt", "restaurantName", "status"]);
+
+  const filter = { isDeleted: false };
+  if (query.status) filter.status = query.status;
+  if (query.setupStatus) filter.setupStatus = query.setupStatus;
+  if (query.search) {
+    const regex = { $regex: query.search, $options: "i" };
+    filter.$or = [
+      { restaurantName: regex },
+      { name: regex },
+      { email: regex },
+      { mobileNumber: regex },
+      { slug: regex },
+    ];
+  }
+
+  const [restaurants, total] = await Promise.all([
+    Restaurant.find(filter).sort(sort).skip(skip).limit(limit).lean(),
+    Restaurant.countDocuments(filter),
+  ]);
+
+  const items = restaurants.map(publicRestaurant);
+  return { items, meta: paginationMeta({ total, page, limit }) };
 };
 
 module.exports = {
@@ -314,5 +471,9 @@ module.exports = {
   updateSetupWizard,
   uploadLogo,
   checkDomainAvailability,
-  publicRestaurant
+  publicRestaurant,
+  listRestaurants,
+  getRestaurant,
+  updateRestaurant,
+  updateRestaurantStatus,
 };

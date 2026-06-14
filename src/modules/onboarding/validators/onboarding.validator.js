@@ -66,4 +66,49 @@ const domainCheck = {
   }).or("slug", "subdomain", "customDomain")
 };
 
-module.exports = { register, setupWizard, domainCheck };
+const list = {
+  query: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(10),
+    search: Joi.string().allow("", null),
+    status: Joi.string().valid("trialing", "active", "inactive", "suspended", "expired"),
+    setupStatus: Joi.string().valid("pending", "in_progress", "completed"),
+    sortBy: Joi.string().valid("createdAt", "restaurantName", "status").default("createdAt"),
+    sortOrder: Joi.string().valid("asc", "desc").default("desc"),
+  }),
+};
+
+const idParam = {
+  params: Joi.object({ id: objectId.required() }),
+};
+
+const update = {
+  params: Joi.object({ id: objectId.required() }),
+  body: Joi.object({
+    restaurantName: Joi.string().min(2).max(160),
+    ownerName: Joi.string().min(2).max(120),
+    mobileNumber: phone,
+    email: Joi.string().email(),
+    GSTNumber: gst.allow("", null),
+    address: Joi.string().max(500).allow("", null),
+    city: Joi.string().max(80).allow("", null),
+    state: Joi.string().max(80).allow("", null),
+    country: Joi.string().max(80),
+    pincode: Joi.string().max(20).allow("", null),
+    currency: Joi.string().length(3).uppercase(),
+    timezone: Joi.string().max(80),
+    subdomain: slug,
+    customDomain: Joi.string().domain().lowercase().allow("", null),
+  }).min(1),
+};
+
+const statusUpdate = {
+  params: Joi.object({ id: objectId.required() }),
+  body: Joi.object({
+    status: Joi.string()
+      .valid("trialing", "active", "inactive", "suspended", "expired")
+      .required(),
+  }),
+};
+
+module.exports = { register, setupWizard, domainCheck, list, idParam, update, statusUpdate };

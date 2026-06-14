@@ -20,6 +20,27 @@ router.post(
   controller.register,
 );
 
+router.get("/list", authenticate, validate(validator.list), controller.list);
+router.get(
+  "/getRestaurantById/:id",
+  authenticate,
+  validate(validator.idParam),
+  controller.get,
+);
+router.patch(
+  "/update/:id",
+  authenticate,
+  uploadImage.single("logo"),
+  validate(validator.update),
+  controller.update,
+);
+router.patch(
+  "/status/:id",
+  authenticate,
+  validate(validator.statusUpdate),
+  controller.updateStatus,
+);
+
 router.use(authenticate, attachTenantScope);
 router.patch(
   "/setup-wizard",
