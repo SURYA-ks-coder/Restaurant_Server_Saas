@@ -28,7 +28,7 @@ router.get(
   controller.listByRole,
 );
 router.get(
-  "/:id",
+  "/getUserById/:id",
   authorize("staff:read"),
   validate(validator.idParam),
   controller.get,
@@ -41,19 +41,19 @@ router.post(
   controller.create,
 );
 router.patch(
-  "/assign-role",
+  "/assignRole",
   authorize("staff:update"),
   validate(validator.assignRole),
   controller.assignRole,
 );
 router.patch(
-  "/:id",
+  "/UpdateUser/:id",
   authorize("staff:update"),
   validate(validator.update),
   controller.update,
 );
 router.delete(
-  "/:id",
+  "/deleteUser/:id",
   authorize("staff:delete"),
   validate(validator.idParam),
   controller.remove,

@@ -58,7 +58,7 @@ const listByRole = asyncHandler(async (req, res) => {
 
 const assignRole = asyncHandler(async (req, res) => {
   const data = await staffService.assignRoleToStaff({
-    staffIds: req.body.staffIds,
+    userIds: req.body.userIds,
     roleId: req.body.roleId,
     tenant: req.tenant,
     user: req.user,

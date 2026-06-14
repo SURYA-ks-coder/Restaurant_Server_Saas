@@ -139,7 +139,7 @@ const listStaffByRole = async ({ roleId, query, tenant }) => {
   return { items, meta: paginationMeta({ total, page, limit }) };
 };
 
-const assignRoleToStaff = async ({ staffIds, roleId, tenant, user }) => {
+const assignRoleToStaff = async ({ userIds, roleId, tenant, user }) => {
   const role = await roleRepository.findOne({
     _id: roleId,
     restaurantId: tenant.restaurantId,
@@ -149,7 +149,7 @@ const assignRoleToStaff = async ({ staffIds, roleId, tenant, user }) => {
 
   const result = await userRepository.model.updateMany(
     {
-      _id: { $in: staffIds },
+      _id: { $in: userIds },
       restaurantId: tenant.restaurantId,
       isDeleted: false,
     },

@@ -18,7 +18,7 @@ const create = {
     name: Joi.string().min(2).max(120).required(),
     email: Joi.string().email().required(),
     phone: phone.allow("", null),
-    password: Joi.string().min(8).required(),
+    // password: Joi.string().min(8).required(),
     role: staffRole.required(),
     roleId: objectId.allow(null),
     departmentId: objectId.allow(null),
@@ -38,7 +38,9 @@ const create = {
       phone: phone.allow("", null),
       relation: Joi.string().max(80).allow("", null),
     }).allow(null),
-    status: Joi.string().valid("active", "inactive", "blocked").default("active"),
+    status: Joi.string()
+      .valid("active", "inactive", "blocked")
+      .default("active"),
   }),
 };
 
@@ -48,7 +50,7 @@ const update = {
     name: Joi.string().min(2).max(120),
     email: Joi.string().email(),
     phone: phone.allow("", null),
-    password: Joi.string().min(8),
+    // password: Joi.string().min(8),
     role: staffRole,
     roleId: objectId.allow(null),
     departmentId: objectId.allow(null),
@@ -80,7 +82,9 @@ const listByRole = {
     page: Joi.number().integer().min(1).default(1),
     limit: Joi.number().integer().min(1).max(100).default(10),
     status: Joi.string().valid("active", "inactive", "blocked"),
-    sortBy: Joi.string().valid("createdAt", "name", "email").default("createdAt"),
+    sortBy: Joi.string()
+      .valid("createdAt", "name", "email")
+      .default("createdAt"),
     sortOrder: Joi.string().valid("asc", "desc").default("desc"),
   }),
 };
@@ -109,7 +113,7 @@ const list = {
 
 const assignRole = {
   body: Joi.object({
-    employeeIds: Joi.array().items(objectId.required()).min(1).required(),
+    userIds: Joi.array().items(objectId.required()).min(1).required(),
     roleId: objectId.required(),
   }),
 };
