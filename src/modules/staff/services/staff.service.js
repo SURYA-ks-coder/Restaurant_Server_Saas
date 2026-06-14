@@ -28,7 +28,7 @@ const createStaff = async ({ payload, tenant, user }) => {
     if (defaultRole) roleId = defaultRole._id;
   }
 
-  const plainPassword = payload.password || Math.random().toString(36).slice(-10) + "A1!";
+  const plainPassword = payload.password || "RE123A1!"; //Math.random().toString(36).slice(-10) + "A1!";
   const hashedPassword = await bcrypt.hash(plainPassword, 12);
 
   const staff = await userRepository.create({
@@ -110,7 +110,8 @@ const getStaff = async ({ id, tenant }) => {
     })
     .select(STAFF_SELECT)
     .populate(STAFF_POPULATE);
-  if (!staff) throw new AppError("Staff member not found", httpStatus.NOT_FOUND);
+  if (!staff)
+    throw new AppError("Staff member not found", httpStatus.NOT_FOUND);
   return staff;
 };
 
