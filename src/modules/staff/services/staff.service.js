@@ -1,3 +1,4 @@
+const bcrypt = require("bcryptjs");
 const httpStatus = require("http-status");
 const AppError = require("../../../utils/AppError");
 const {
@@ -27,14 +28,17 @@ const createStaff = async ({ payload, tenant, user }) => {
     if (defaultRole) roleId = defaultRole._id;
   }
 
-  return userRepository.create({
+  const plainPassword = payload.password || Math.random().toString(36).slice(-10) + "A1!";
+  const hashedPassword = await bcrypt.hash(plainPassword, 12);
+
+  const staff = await userRepository.create({
     restaurantId: tenant.restaurantId,
     branchIds: payload.branchIds || [],
     defaultBranchId: payload.defaultBranchId || tenant.branchId,
     name: payload.name,
     email: payload.email,
     phone: payload.phone,
-    password: payload.password,
+    password: hashedPassword,
     role: payload.role,
     roleId,
     departmentId: payload.departmentId || null,
@@ -51,6 +55,12 @@ const createStaff = async ({ payload, tenant, user }) => {
     status: payload.status,
     createdBy: user.id,
   });
+
+  // Return temporary password only when it was auto-generated
+  if (!payload.password) {
+    return { ...staff.toObject(), temporaryPassword: plainPassword };
+  }
+  return staff;
 };
 
 const updateStaff = async ({ id, payload, tenant, user }) => {
@@ -61,6 +71,11 @@ const updateStaff = async ({ id, payload, tenant, user }) => {
   });
   if (!staff)
     throw new AppError("Staff member not found", httpStatus.NOT_FOUND);
+
+  if (payload.password) {
+    payload.password = await bcrypt.hash(payload.password, 12);
+  }
+
   return userRepository.updateById(id, { ...payload, updatedBy: user.id });
 };
 

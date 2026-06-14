@@ -18,7 +18,7 @@ const create = {
     name: Joi.string().min(2).max(120).required(),
     email: Joi.string().email().required(),
     phone: phone.allow("", null),
-    // password: Joi.string().min(8).required(),
+    password: Joi.string().min(8).allow(null, ""),
     role: staffRole.required(),
     roleId: objectId.allow(null),
     departmentId: objectId.allow(null),
