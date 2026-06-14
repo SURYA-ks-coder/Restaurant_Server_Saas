@@ -94,6 +94,7 @@ const normalizeBranchPayload = (payload) => ({
 const publicRestaurant = (restaurant) => ({
   _id: restaurant._id,
   restaurantName: restaurant.restaurantName || restaurant.name,
+  ownerName: restaurant.ownerName,
   slug: restaurant.slug,
   subdomain: restaurant.subdomain,
   customDomain: restaurant.customDomain,
