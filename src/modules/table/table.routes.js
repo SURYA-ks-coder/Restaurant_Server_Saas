@@ -13,6 +13,18 @@ const router = express.Router();
 router.use(authenticate, enforceBranchAccess, attachTenantScope);
 
 router.get(
+  "/stats",
+  authorize("table:read"),
+  validate(validator.list),
+  controller.tableStats,
+);
+router.get(
+  "/:id/stats",
+  authorize("table:read"),
+  validate(validator.idParam),
+  controller.singleTableStats,
+);
+router.get(
   "/list",
   authorize("table:read"),
   validate(validator.list),

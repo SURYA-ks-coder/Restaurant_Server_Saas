@@ -89,6 +89,22 @@ const activeList = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "Active tables fetched", data: items, meta });
 });
 
+const tableStats = asyncHandler(async (req, res) => {
+  const { items, meta } = await tableService.getTableStats({
+    query: req.query,
+    tenant: req.tenant,
+  });
+  sendSuccess(res, { message: "Table stats fetched", data: items, meta });
+});
+
+const singleTableStats = asyncHandler(async (req, res) => {
+  const data = await tableService.getSingleTableStats({
+    id: req.params.id,
+    tenant: req.tenant,
+  });
+  sendSuccess(res, { message: "Table stats fetched", data });
+});
+
 module.exports = {
   create,
   update,
@@ -99,4 +115,6 @@ module.exports = {
   get,
   list,
   activeList,
+  tableStats,
+  singleTableStats,
 };
