@@ -1,6 +1,13 @@
+const mongoose = require("mongoose");
 const Bill = require("../../pos/models/Bill.model");
 const Expense = require("../../expense/models/Expense.model");
 const Kot = require("../../kot/models/Kot.model");
+const Customer = require("../../customer/Customer.model");
+const User = require("../../auth/models/User.model");
+const {
+  parsePagination,
+  paginationMeta,
+} = require("../../../helpers/queryBuilder");
 
 const buildFilter = ({ query, tenant }) => {
   const filter = {
@@ -264,6 +271,371 @@ const expenseAnalytics = async ({ query, tenant }) => {
   ]);
 };
 
+// ── helpers for new reports ───────────────────────────────────────────────────
+const _toObjId = (id) => new mongoose.Types.ObjectId(id);
+
+const _reportFilter = ({ query, tenant }) => {
+  const filter = { restaurantId: tenant.restaurantId };
+  filter.branchId = query.branchId ? _toObjId(query.branchId) : tenant.branchId;
+  if (query.startDate || query.endDate) {
+    filter.createdAt = {};
+    if (query.startDate) filter.createdAt.$gte = new Date(query.startDate);
+    if (query.endDate) filter.createdAt.$lte = new Date(query.endDate);
+  }
+  return filter;
+};
+
+// ── Sales Report ──────────────────────────────────────────────────────────────
+const salesReport = async ({ query, tenant }) => {
+  const { page, limit, skip } = parsePagination(query);
+  const filter = _reportFilter({ query, tenant });
+
+  const [summaryAgg, records, total] = await Promise.all([
+    Bill.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$grandTotal" },
+          totalOrders: { $sum: 1 },
+          totalTax: { $sum: "$taxTotal" },
+          totalDiscount: { $sum: "$discountTotal" },
+        },
+      },
+    ]),
+    Bill.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    Bill.countDocuments(filter),
+  ]);
+
+  const s = summaryAgg[0] || {
+    totalRevenue: 0,
+    totalOrders: 0,
+    totalTax: 0,
+    totalDiscount: 0,
+  };
+
+  return {
+    totalRevenue: s.totalRevenue,
+    totalOrders: s.totalOrders,
+    totalTax: s.totalTax,
+    totalDiscount: s.totalDiscount,
+    averageOrderValue:
+      s.totalOrders > 0 ? Number((s.totalRevenue / s.totalOrders).toFixed(2)) : 0,
+    records: records.map((r) => ({
+      billId: r._id,
+      billNo: r.billNo,
+      orderType: r.orderType,
+      grandTotal: r.grandTotal,
+      subTotal: r.subTotal,
+      taxTotal: r.taxTotal,
+      discountTotal: r.discountTotal,
+      paymentStatus: r.paymentStatus,
+      status: r.status,
+      createdAt: r.createdAt,
+    })),
+    meta: paginationMeta({ total, page, limit }),
+  };
+};
+
+// ── Orders Report ─────────────────────────────────────────────────────────────
+const ordersReport = async ({ query, tenant }) => {
+  const { page, limit, skip } = parsePagination(query);
+  const filter = _reportFilter({ query, tenant });
+  if (query.status) filter.status = query.status;
+
+  const [summaryAgg, records, total] = await Promise.all([
+    Bill.aggregate([
+      { $match: _reportFilter({ query, tenant }) },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+    Bill.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    Bill.countDocuments(filter),
+  ]);
+
+  const statusMap = Object.fromEntries(summaryAgg.map((a) => [a._id, a.count]));
+  const totalAll = Object.values(statusMap).reduce((s, v) => s + v, 0);
+
+  return {
+    totalOrders: totalAll,
+    completedOrders: statusMap.completed || 0,
+    cancelledOrders: statusMap.cancelled || 0,
+    records: records.map((r) => ({
+      billId: r._id,
+      billNo: r.billNo,
+      orderType: r.orderType,
+      tableId: r.tableId,
+      grandTotal: r.grandTotal,
+      status: r.status,
+      paymentStatus: r.paymentStatus,
+      createdAt: r.createdAt,
+    })),
+    meta: paginationMeta({ total, page, limit }),
+  };
+};
+
+// ── Top Selling Items Report ──────────────────────────────────────────────────
+const topSellingItemsReport = async ({ query, tenant }) => {
+  const { page, limit, skip } = parsePagination(query);
+  const filter = { ..._reportFilter({ query, tenant }), status: { $ne: "cancelled" } };
+
+  const agg = await Bill.aggregate([
+    { $match: filter },
+    { $unwind: "$items" },
+    {
+      $group: {
+        _id: "$items.menuItemId",
+        itemName: { $first: "$items.itemName" },
+        quantitySold: { $sum: "$items.quantity" },
+        revenueGenerated: { $sum: "$items.total" },
+      },
+    },
+    { $sort: { quantitySold: -1, revenueGenerated: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+    {
+      $project: {
+        _id: 0,
+        itemId: "$_id",
+        itemName: 1,
+        quantitySold: 1,
+        revenueGenerated: 1,
+      },
+    },
+  ]);
+
+  return agg;
+};
+
+// ── Least Selling Items Report ────────────────────────────────────────────────
+const leastSellingItemsReport = async ({ query, tenant }) => {
+  const { page, limit, skip } = parsePagination(query);
+  const filter = { ..._reportFilter({ query, tenant }), status: { $ne: "cancelled" } };
+
+  return Bill.aggregate([
+    { $match: filter },
+    { $unwind: "$items" },
+    {
+      $group: {
+        _id: "$items.menuItemId",
+        itemName: { $first: "$items.itemName" },
+        quantitySold: { $sum: "$items.quantity" },
+        revenueGenerated: { $sum: "$items.total" },
+      },
+    },
+    { $sort: { quantitySold: 1 } },
+    { $skip: skip },
+    { $limit: limit },
+    {
+      $project: {
+        _id: 0,
+        itemId: "$_id",
+        itemName: 1,
+        quantitySold: 1,
+      },
+    },
+  ]);
+};
+
+// ── Staff Performance Report ──────────────────────────────────────────────────
+const staffPerformanceReport = async ({ query, tenant }) => {
+  const { page, limit, skip } = parsePagination(query);
+  const filter = {
+    ..._reportFilter({ query, tenant }),
+    status: "completed",
+  };
+
+  return Bill.aggregate([
+    { $match: filter },
+    {
+      $group: {
+        _id: "$createdBy",
+        ordersHandled: { $sum: 1 },
+        salesAmount: { $sum: "$grandTotal" },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "_staff",
+      },
+    },
+    { $unwind: { path: "$_staff", preserveNullAndEmptyArrays: true } },
+    {
+      $project: {
+        _id: 0,
+        staffId: "$_id",
+        staffName: { $ifNull: ["$_staff.name", "Unknown"] },
+        ordersHandled: 1,
+        salesAmount: 1,
+        averageOrderValue: {
+          $cond: [
+            { $gt: ["$ordersHandled", 0] },
+            { $round: [{ $divide: ["$salesAmount", "$ordersHandled"] }, 2] },
+            0,
+          ],
+        },
+      },
+    },
+    { $sort: { salesAmount: -1 } },
+    { $skip: skip },
+    { $limit: limit },
+  ]);
+};
+
+// ── Customer Report ───────────────────────────────────────────────────────────
+const customersReport = async ({ query, tenant }) => {
+  const base = { restaurantId: tenant.restaurantId, branchId: tenant.branchId };
+  const dateFilter = {};
+  if (query.startDate) dateFilter.$gte = new Date(query.startDate);
+  if (query.endDate) dateFilter.$lte = new Date(query.endDate);
+  const hasDate = Object.keys(dateFilter).length > 0;
+
+  const [total, newCustomers, repeat, topCustomers] = await Promise.all([
+    Customer.countDocuments(base),
+    Customer.countDocuments({
+      ...base,
+      ...(hasDate ? { createdAt: dateFilter } : {}),
+    }),
+    Customer.countDocuments({ ...base, totalOrders: { $gt: 1 } }),
+    Customer.find(base)
+      .sort({ totalOrders: -1, loyaltyPoints: -1 })
+      .limit(10)
+      .select("customerName mobileNumber totalOrders loyaltyPoints")
+      .lean(),
+  ]);
+
+  return {
+    totalCustomers: total,
+    newCustomers,
+    repeatCustomers: repeat,
+    topCustomers: topCustomers.map((c) => ({
+      customerId: c._id,
+      customerName: c.customerName,
+      mobileNumber: c.mobileNumber,
+      totalOrders: c.totalOrders,
+      loyaltyPoints: c.loyaltyPoints,
+    })),
+  };
+};
+
+// ── Tax Report (detailed) ─────────────────────────────────────────────────────
+const taxDetailReport = async ({ query, tenant }) => {
+  const filter = _reportFilter({ query, tenant });
+
+  const [agg] = await Bill.aggregate([
+    { $match: { ...filter, status: { $ne: "cancelled" } } },
+    {
+      $group: {
+        _id: null,
+        totalTaxCollected: { $sum: "$taxTotal" },
+        totalOrders: { $sum: 1 },
+        totalRevenue: { $sum: "$grandTotal" },
+      },
+    },
+  ]);
+
+  const total = agg?.totalTaxCollected || 0;
+
+  return {
+    totalTaxCollected: total,
+    cgst: Number((total / 2).toFixed(2)),
+    sgst: Number((total / 2).toFixed(2)),
+    serviceTax: 0,
+    totalOrders: agg?.totalOrders || 0,
+    totalRevenue: agg?.totalRevenue || 0,
+  };
+};
+
+// ── Branch Report ─────────────────────────────────────────────────────────────
+const branchesReport = async ({ query, tenant }) => {
+  const dateFilter = {};
+  if (query.startDate) dateFilter.$gte = new Date(query.startDate);
+  if (query.endDate) dateFilter.$lte = new Date(query.endDate);
+  const hasDate = Object.keys(dateFilter).length > 0;
+
+  return Bill.aggregate([
+    {
+      $match: {
+        restaurantId: tenant.restaurantId,
+        status: { $ne: "cancelled" },
+        ...(hasDate ? { createdAt: dateFilter } : {}),
+      },
+    },
+    {
+      $group: {
+        _id: "$branchId",
+        totalRevenue: { $sum: "$grandTotal" },
+        totalOrders: { $sum: 1 },
+        totalTax: { $sum: "$taxTotal" },
+        totalDiscount: { $sum: "$discountTotal" },
+      },
+    },
+    {
+      $lookup: {
+        from: "branches",
+        localField: "_id",
+        foreignField: "_id",
+        as: "_branch",
+      },
+    },
+    { $unwind: { path: "$_branch", preserveNullAndEmptyArrays: true } },
+    {
+      $project: {
+        _id: 0,
+        branchId: "$_id",
+        branchName: { $ifNull: ["$_branch.branchName", "Unknown"] },
+        totalRevenue: 1,
+        totalOrders: 1,
+        totalTax: 1,
+        totalDiscount: 1,
+        averageOrderValue: {
+          $cond: [
+            { $gt: ["$totalOrders", 0] },
+            { $round: [{ $divide: ["$totalRevenue", "$totalOrders"] }, 2] },
+            0,
+          ],
+        },
+      },
+    },
+    { $sort: { totalRevenue: -1 } },
+  ]);
+};
+
+// ── Audit Logs ────────────────────────────────────────────────────────────────
+const auditLogsReport = async ({ query, tenant }) => {
+  const { page, limit, skip } = parsePagination(query);
+  const filter = _reportFilter({ query, tenant });
+
+  const [records, total] = await Promise.all([
+    Bill.find(filter)
+      .sort({ updatedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("createdBy", "name email role")
+      .lean(),
+    Bill.countDocuments(filter),
+  ]);
+
+  return {
+    records: records.map((b) => ({
+      user: b.createdBy?.name || "Unknown",
+      role: b.createdBy?.role || "-",
+      action: `bill_${b.status}`,
+      module: "POS",
+      detail: `Bill #${b.billNo} — ${b.orderType} — ₹${b.grandTotal}`,
+      timestamp: b.updatedAt,
+    })),
+    meta: paginationMeta({ total, page, limit }),
+  };
+};
+
 module.exports = {
   dailySales,
   monthlySales,
@@ -277,4 +649,14 @@ module.exports = {
   peakHours,
   revenueAnalytics,
   expenseAnalytics,
+  // new
+  salesReport,
+  ordersReport,
+  topSellingItemsReport,
+  leastSellingItemsReport,
+  staffPerformanceReport,
+  customersReport,
+  taxDetailReport,
+  branchesReport,
+  auditLogsReport,
 };

@@ -98,6 +98,68 @@ const expenseAnalytics = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "Expense analytics", data });
 });
 
+const { toCSV } = require("../../../utils/csvExport");
+
+const _csvOrJson = (res, data, filename) => {
+  const rows = Array.isArray(data) ? data : data.records || [data];
+  res.setHeader("Content-Type", "text/csv");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}.csv"`);
+  return res.send(toCSV(rows));
+};
+
+const salesReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.salesReport({ query: req.query, tenant: req.tenant });
+  if (req.query.export === "csv") return _csvOrJson(res, data, "sales-report");
+  sendSuccess(res, { message: "Sales report", data });
+});
+
+const ordersReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.ordersReport({ query: req.query, tenant: req.tenant });
+  if (req.query.export === "csv") return _csvOrJson(res, data, "orders-report");
+  sendSuccess(res, { message: "Orders report", data });
+});
+
+const topSellingItemsReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.topSellingItemsReport({ query: req.query, tenant: req.tenant });
+  if (req.query.export === "csv") return _csvOrJson(res, data, "top-selling-items");
+  sendSuccess(res, { message: "Top selling items report", data });
+});
+
+const leastSellingItemsReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.leastSellingItemsReport({ query: req.query, tenant: req.tenant });
+  if (req.query.export === "csv") return _csvOrJson(res, data, "least-selling-items");
+  sendSuccess(res, { message: "Least selling items report", data });
+});
+
+const staffPerformanceReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.staffPerformanceReport({ query: req.query, tenant: req.tenant });
+  if (req.query.export === "csv") return _csvOrJson(res, data, "staff-performance");
+  sendSuccess(res, { message: "Staff performance report", data });
+});
+
+const customersReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.customersReport({ query: req.query, tenant: req.tenant });
+  if (req.query.export === "csv") return _csvOrJson(res, data, "customers-report");
+  sendSuccess(res, { message: "Customers report", data });
+});
+
+const taxDetailReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.taxDetailReport({ query: req.query, tenant: req.tenant });
+  sendSuccess(res, { message: "Tax report", data });
+});
+
+const branchesReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.branchesReport({ query: req.query, tenant: req.tenant });
+  if (req.query.export === "csv") return _csvOrJson(res, data, "branches-report");
+  sendSuccess(res, { message: "Branches report", data });
+});
+
+const auditLogsReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.auditLogsReport({ query: req.query, tenant: req.tenant });
+  if (req.query.export === "csv") return _csvOrJson(res, data, "audit-logs");
+  sendSuccess(res, { message: "Audit logs", data });
+});
+
 module.exports = {
   dailySales,
   monthlySales,
@@ -111,4 +173,14 @@ module.exports = {
   peakHours,
   revenueAnalytics,
   expenseAnalytics,
+  // new
+  salesReport,
+  ordersReport,
+  topSellingItemsReport,
+  leastSellingItemsReport,
+  staffPerformanceReport,
+  customersReport,
+  taxDetailReport,
+  branchesReport,
+  auditLogsReport,
 };

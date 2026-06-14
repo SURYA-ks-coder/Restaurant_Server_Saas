@@ -85,4 +85,60 @@ router.get(
   controller.kotReport,
 );
 
+// ── New Report Routes ─────────────────────────────────────────────────────────
+router.get(
+  "/sales",
+  authorize("reports:read"),
+  validate(validator.reportQuery),
+  controller.salesReport,
+);
+router.get(
+  "/orders",
+  authorize("reports:read"),
+  validate(validator.reportQuery),
+  controller.ordersReport,
+);
+router.get(
+  "/items/top-selling",
+  authorize("reports:read"),
+  validate(validator.itemsQuery),
+  controller.topSellingItemsReport,
+);
+router.get(
+  "/items/least-selling",
+  authorize("reports:read"),
+  validate(validator.itemsQuery),
+  controller.leastSellingItemsReport,
+);
+router.get(
+  "/staff-performance",
+  authorize("reports:read"),
+  validate(validator.reportQuery),
+  controller.staffPerformanceReport,
+);
+router.get(
+  "/customers",
+  authorize("reports:read"),
+  validate(validator.reportQuery),
+  controller.customersReport,
+);
+router.get(
+  "/tax-detail",
+  authorize("reports:read"),
+  validate(validator.reportQuery),
+  controller.taxDetailReport,
+);
+router.get(
+  "/branches",
+  authorize("reports:read"),
+  validate(validator.reportQuery),
+  controller.branchesReport,
+);
+router.get(
+  "/audit-logs",
+  authorize("reports:read"),
+  validate(validator.reportQuery),
+  controller.auditLogsReport,
+);
+
 module.exports = router;

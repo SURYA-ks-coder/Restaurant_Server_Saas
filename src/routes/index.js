@@ -21,6 +21,7 @@ const departmentRoutes = require("../modules/department/department.routes");
 const shiftRoutes = require("../modules/shift/shift.routes");
 const designationRoutes = require("../modules/designation/designation.routes");
 const reportsRoutes = require("../modules/reports/reports.routes");
+const dashboardRoutes = require("../modules/dashboard/dashboard.routes");
 const supplierRoutes = require("../modules/supplier/supplier.routes");
 const router = express.Router();
 
@@ -51,5 +52,6 @@ router.use("/departments", departmentRoutes);
 router.use("/shifts", shiftRoutes);
 router.use("/designations", designationRoutes);
 router.use("/reports", reportsRoutes);
+router.use("/dashboard", dashboardRoutes);
 
 module.exports = router;
