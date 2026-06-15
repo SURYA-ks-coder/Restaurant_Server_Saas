@@ -9,7 +9,7 @@ const {
 const userRepository = require("../../auth/repositories/user.repository");
 const roleRepository = require("../../role/repositories/role.repository");
 
-const createStaff = async ({ payload, tenant, user }) => {
+const createStaff = async ({ payload, tenant, user, file }) => {
   const exists = await userRepository.findOne({
     restaurantId: tenant.restaurantId,
     email: payload.email,
@@ -50,7 +50,7 @@ const createStaff = async ({ payload, tenant, user }) => {
     dateOfBirth: payload.dateOfBirth || null,
     dateOfJoining: payload.dateOfJoining || null,
     address: payload.address || null,
-    profileImage: payload.profileImage || null,
+    profileImage: file ? file.location : (payload.profileImage || null),
     emergencyContact: payload.emergencyContact || null,
     status: payload.status,
     createdBy: user.id,
@@ -63,7 +63,7 @@ const createStaff = async ({ payload, tenant, user }) => {
   return staff;
 };
 
-const updateStaff = async ({ id, payload, tenant, user }) => {
+const updateStaff = async ({ id, payload, tenant, user, file }) => {
   const staff = await userRepository.findOne({
     _id: id,
     restaurantId: tenant.restaurantId,
@@ -75,6 +75,7 @@ const updateStaff = async ({ id, payload, tenant, user }) => {
   if (payload.password) {
     payload.password = await bcrypt.hash(payload.password, 12);
   }
+  if (file) payload.profileImage = file.location;
 
   return userRepository.updateById(id, { ...payload, updatedBy: user.id });
 };

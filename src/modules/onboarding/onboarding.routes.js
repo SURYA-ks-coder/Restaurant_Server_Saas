@@ -3,7 +3,7 @@ const controller = require("./controllers/onboarding.controller");
 const validate = require("../../middleware/validate.middleware");
 const { authenticate, authorize } = require("../../middleware/auth.middleware");
 const attachTenantScope = require("../../middleware/tenantScope.middleware");
-const { uploadImage } = require("../../middleware/upload.middleware");
+const { restaurantLogoUpload } = require("../../middleware/upload.middleware");
 const validator = require("./validators/onboarding.validator");
 
 const router = express.Router();
@@ -15,7 +15,7 @@ router.post(
 );
 router.post(
   "/register",
-  uploadImage.single("logo"),
+  restaurantLogoUpload.single("logo"),
   validate(validator.register),
   controller.register,
 );
@@ -30,7 +30,7 @@ router.get(
 router.patch(
   "/update/:id",
   authenticate,
-  uploadImage.single("logo"),
+  restaurantLogoUpload.single("logo"),
   validate(validator.update),
   controller.update,
 );
@@ -45,14 +45,14 @@ router.use(authenticate, attachTenantScope);
 router.patch(
   "/setup-wizard",
   authorize("restaurant:update"),
-  uploadImage.single("logo"),
+  restaurantLogoUpload.single("logo"),
   validate(validator.setupWizard),
   controller.setupWizard,
 );
 router.post(
   "/logo",
   authorize("restaurant:update"),
-  uploadImage.single("logo"),
+  restaurantLogoUpload.single("logo"),
   controller.uploadLogo,
 );
 

@@ -7,7 +7,7 @@ const {
   enforceBranchAccess,
 } = require("../../middleware/auth.middleware");
 const attachTenantScope = require("../../middleware/tenantScope.middleware");
-const { uploadImage } = require("../../middleware/upload.middleware");
+const { menuItemUpload } = require("../../middleware/upload.middleware");
 const validator = require("./validators/menuItem.validator");
 
 const router = express.Router();
@@ -29,14 +29,14 @@ router.get(
 router.post(
   "/",
   authorize("menu:create"),
-  uploadImage.single("image"),
+  menuItemUpload.single("image"),
   validate(validator.create),
   controller.create,
 );
 router.patch(
   "/updateMenuItem/:id",
   authorize("menu:update"),
-  uploadImage.single("image"),
+  menuItemUpload.single("image"),
   validate(validator.update),
   controller.update,
 );

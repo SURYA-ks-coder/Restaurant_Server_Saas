@@ -21,7 +21,7 @@ const createCategory = async ({ payload, tenant, user, file }) => {
 
   return categoryRepository.create({
     ...payload,
-    image: file ? `/uploads/${file.filename}` : payload.image,
+    image: file ? file.location : payload.image,
     restaurantId: tenant.restaurantId,
     branchId: tenant.branchId,
     createdBy: user.id
@@ -36,7 +36,7 @@ const updateCategory = async ({ id, payload, tenant, user, file }) => {
     isDeleted: false
   });
   if (!category) throw new AppError("Category not found", httpStatus.NOT_FOUND);
-  if (file) payload.image = `/uploads/${file.filename}`;
+  if (file) payload.image = file.location;
   return categoryRepository.updateById(id, { ...payload, updatedBy: user.id });
 };
 

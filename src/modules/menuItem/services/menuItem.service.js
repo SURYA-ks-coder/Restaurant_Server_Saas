@@ -73,7 +73,7 @@ const normalizePayload = (payload, file) => {
   delete data.parcelPrice;
   delete data.onlinePrice;
   delete data.discountPrice;
-  if (file) data.image = `/uploads/${file.filename}`;
+  if (file) data.image = file.location;
   return data;
 };
 

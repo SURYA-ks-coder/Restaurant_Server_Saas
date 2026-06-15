@@ -16,11 +16,16 @@ const env = {
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
   },
   bcryptSaltRounds: Number(process.env.BCRYPT_SALT_ROUNDS || 12),
-  uploadDir: process.env.UPLOAD_DIR || "src/uploads",
   maxFileSizeMb: Number(process.env.MAX_FILE_SIZE_MB || 5),
   rateLimit: {
     windowMinutes: Number(process.env.RATE_LIMIT_WINDOW_MINUTES || 15),
     max: Number(process.env.RATE_LIMIT_MAX || 300),
+  },
+  aws: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+    region: process.env.AWS_REGION || "ap-south-1",
+    s3Bucket: process.env.AWS_S3_BUCKET_NAME || "",
   },
 };
 

@@ -31,7 +31,7 @@ const createSupplier = async ({ payload, tenant, user, file }) => {
 
   return supplierRepository.create({
     ...payload,
-    image: file ? `/uploads/${file.filename}` : payload.image,
+    image: file ? file.location : payload.image,
     restaurantId: tenant.restaurantId,
     branchId: tenant.branchId,
     createdBy: user.id,
@@ -46,7 +46,7 @@ const updateSupplier = async ({ id, payload, tenant, user, file }) => {
     isDeleted: false,
   });
   if (!supplier) throw new AppError("Supplier not found", httpStatus.NOT_FOUND);
-  if (file) payload.image = `/uploads/${file.filename}`;
+  if (file) payload.image = file.location;
   return supplierRepository.updateById(id, { ...payload, updatedBy: user.id });
 };
 

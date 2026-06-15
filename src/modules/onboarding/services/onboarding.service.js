@@ -156,7 +156,7 @@ const registerRestaurant = async ({ payload, file }) => {
     state: payload.state,
     country: payload.country,
     pincode: payload.pincode,
-    logo: file ? `/uploads/${file.filename}` : payload.logo,
+    logo: file ? file.location : payload.logo,
     currency: payload.currency,
     timezone: payload.timezone,
     slug,
@@ -276,7 +276,7 @@ const updateSetupWizard = async ({ tenant, user, payload, file }) => {
     if (payload[field] !== undefined) update[field] = payload[field];
   });
   if (payload.restaurantName) update.name = payload.restaurantName;
-  if (file) update.logo = `/uploads/${file.filename}`;
+  if (file) update.logo = file.location;
   if (payload.customDomain) {
     update.domainStatus = "pending";
     update["onboardingSteps.domain"] = true;
@@ -343,7 +343,7 @@ const uploadLogo = async ({ tenant, file }) => {
     throw new AppError("Logo file is required", httpStatus.BAD_REQUEST);
   const restaurant = await Restaurant.findByIdAndUpdate(
     tenant.restaurantId,
-    { logo: `/uploads/${file.filename}`, "onboardingSteps.logo": true },
+    { logo: file.location, "onboardingSteps.logo": true },
     { new: true, runValidators: true },
   );
   if (!restaurant)
@@ -417,7 +417,7 @@ const updateRestaurant = async ({ id, payload, file }) => {
     if (payload[f] !== undefined) update[f] = payload[f];
   });
   if (payload.restaurantName) update.name = payload.restaurantName;
-  if (file) update.logo = `/uploads/${file.filename}`;
+  if (file) update.logo = file.location;
   if (payload.customDomain) update.domainStatus = "pending";
 
   const updated = await Restaurant.findByIdAndUpdate(id, update, {

@@ -7,7 +7,7 @@ const {
   enforceBranchAccess,
 } = require("../../middleware/auth.middleware");
 const attachTenantScope = require("../../middleware/tenantScope.middleware");
-const { uploadImage } = require("../../middleware/upload.middleware");
+const { categoryUpload } = require("../../middleware/upload.middleware");
 const validator = require("./validators/category.validator");
 
 const router = express.Router();
@@ -35,14 +35,14 @@ router.get(
 router.post(
   "/",
   authorize("category:create"),
-  uploadImage.single("image"),
+  categoryUpload.single("image"),
   validate(validator.create),
   controller.create,
 );
 router.patch(
   "/updateCategory/:id",
   authorize("category:update"),
-  uploadImage.single("image"),
+  categoryUpload.single("image"),
   validate(validator.update),
   controller.update,
 );

@@ -1,10 +1,8 @@
-const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const compression = require("compression");
 const swaggerUi = require("swagger-ui-express");
-const env = require("./config/env");
 const swaggerSpec = require("./config/swagger");
 const apiRoutes = require("./routes");
 const apiRateLimiter = require("./middleware/rateLimit.middleware");
@@ -29,8 +27,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(attachRequestId);
 app.use(requestLogger);
 app.use(apiRateLimiter);
-app.use("/uploads", express.static(path.join(process.cwd(), env.uploadDir)));
-
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/api/v1", apiRoutes);
 

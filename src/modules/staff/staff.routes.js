@@ -10,6 +10,7 @@ const attachTenantScope = require("../../middleware/tenantScope.middleware");
 const {
   enforcePlanLimit,
 } = require("../../middleware/subscription.middleware");
+const { staffUpload } = require("../../middleware/upload.middleware");
 const validator = require("./validators/staff.validator");
 
 const router = express.Router();
@@ -37,6 +38,7 @@ router.post(
   "/",
   authorize("staff:create"),
   enforcePlanLimit("users"),
+  staffUpload.single("profileImage"),
   validate(validator.create),
   controller.create,
 );
@@ -49,6 +51,7 @@ router.patch(
 router.patch(
   "/UpdateUser/:id",
   authorize("staff:update"),
+  staffUpload.single("profileImage"),
   validate(validator.update),
   controller.update,
 );

@@ -8,6 +8,7 @@ const create = asyncHandler(async (req, res) => {
     payload: req.body,
     tenant: req.tenant,
     user: req.user,
+    file: req.file,
   });
   sendSuccess(res, {
     statusCode: httpStatus.CREATED,
@@ -22,6 +23,7 @@ const update = asyncHandler(async (req, res) => {
     payload: req.body,
     tenant: req.tenant,
     user: req.user,
+    file: req.file,
   });
   sendSuccess(res, { message: "Staff updated", data });
 });
