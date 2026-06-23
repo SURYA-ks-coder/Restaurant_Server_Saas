@@ -181,16 +181,15 @@ const list = asyncHandler(async (req, res) => {
 });
 const todayOrders = async (req, res, next) => {
   try {
-    const { items, meta } = await posService.todayOrders({
+    const data = await posService.todayOrders({
       body: req.body,
       tenant: req.tenant,
     });
 
     sendSuccess(res, {
       statusCode: httpStatus.OK,
-      message: "Orders fetched successfully",
-      data: items,
-      meta,
+      message: "Dashboard stats fetched successfully",
+      data,
     });
   } catch (error) {
     next(error);

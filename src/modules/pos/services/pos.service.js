@@ -13,6 +13,7 @@ const {
 } = require("../../../helpers/queryBuilder");
 const { getIo } = require("../../../sockets");
 const kotRepository = require("../../kot/repositories/kot.repository");
+const tableRepository = require("../../table/repositories/table.repository");
 const { updateTableStatus } = require("../../table/services/table.service");
 
 const createInvoiceNumber = () =>
@@ -269,46 +270,64 @@ const listBills = async ({ query, tenant }) => {
 };
 
 const todayOrders = async ({ body, tenant }) => {
-  try {
-    const page = Number(body?.page) || 1;
-    const limit = Number(body?.limit) || 20;
-    const skip = (page - 1) * limit;
+  const targetDate = body?.date ? new Date(body.date) : new Date();
+  const startOfDay = new Date(targetDate);
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date(targetDate);
+  endOfDay.setHours(23, 59, 59, 999);
 
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+  const baseScope = {
+    restaurantId: tenant.restaurantId,
+    branchId: tenant.branchId,
+  };
+  const dateRange = { $gte: startOfDay, $lte: endOfDay };
 
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
-
-    const filter = {
-      restaurantId: tenant.restaurantId,
-      branchId: tenant.branchId,
-      createdAt: {
-        $gte: startOfDay,
-        $lte: endOfDay,
-      },
-    };
-
-    const [items, total] = await billRepository?.paginate({
-      filter,
-      sort: { createdAt: -1 }, // latest first
-      skip,
-      limit,
-      populate: [
-        {
-          path: "tableId",
-          select: "tableName tableNumber",
+  const [billSummary, kotCount, tableStats] = await Promise.all([
+    billRepository.model.aggregate([
+      { $match: { ...baseScope, createdAt: dateRange } },
+      {
+        $group: {
+          _id: null,
+          ordersToday: { $sum: 1 },
+          todayRevenue: { $sum: "$grandTotal" },
+          byStatus: { $push: "$status" },
         },
-      ],
-    });
+      },
+    ]),
+    kotRepository.model.countDocuments({
+      ...baseScope,
+      status: { $in: ["pending", "preparing"] },
+      createdAt: dateRange,
+    }),
+    tableRepository.model.aggregate([
+      { $match: baseScope },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          occupied: {
+            $sum: { $cond: [{ $eq: ["$status", "occupied"] }, 1, 0] },
+          },
+        },
+      },
+    ]),
+  ]);
 
-    return {
-      items,
-      meta: paginationMeta({ total, page, limit }),
-    };
-  } catch (error) {
-    console.log(error, "Today order error occur");
-  }
+  const s = billSummary[0] || { ordersToday: 0, todayRevenue: 0, byStatus: [] };
+  const t = tableStats[0] || { total: 0, occupied: 0 };
+
+  const statusBreakdown = s.byStatus.reduce((acc, st) => {
+    acc[st] = (acc[st] || 0) + 1;
+    return acc;
+  }, {});
+
+  return {
+    ordersToday: s.ordersToday,
+    todayRevenue: Number(s.todayRevenue.toFixed(2)),
+    kitchenQueue: kotCount,
+    tablesActive: { occupied: t.occupied, total: t.total },
+    orderStatusBreakdown: statusBreakdown,
+  };
 };
 
 const updateBill = async ({ id, payload, tenant, user }) => {
