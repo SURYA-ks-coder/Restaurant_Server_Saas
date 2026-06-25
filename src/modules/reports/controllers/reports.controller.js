@@ -176,6 +176,152 @@ const profitLossReport = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "Profit & loss report", data });
 });
 
+// ── POST-based report controllers ─────────────────────────────────────────────
+
+// Sales
+const salesReportPost = asyncHandler(async (req, res) => {
+  const data = await reportsService.salesReportPost({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "sales-report");
+  sendSuccess(res, { message: "Sales report", data });
+});
+
+const salesSummaryReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.salesSummaryReport({ body: req.body, tenant: req.tenant });
+  sendSuccess(res, { message: "Sales summary report", data });
+});
+
+const revenueReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.revenueReport({ body: req.body, tenant: req.tenant });
+  sendSuccess(res, { message: "Revenue report", data });
+});
+
+const hourlySalesReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.hourlySalesReport({ body: req.body, tenant: req.tenant });
+  sendSuccess(res, { message: "Hourly sales report", data });
+});
+
+const topItemsReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.topItemsReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "top-items");
+  sendSuccess(res, { message: "Top selling items report", data });
+});
+
+const salesByCategoryReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.salesByCategoryReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "sales-by-category");
+  sendSuccess(res, { message: "Sales by category report", data });
+});
+
+// Inventory
+const inventoryStockReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.inventoryStockReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "inventory-stock");
+  sendSuccess(res, { message: "Inventory stock report", data });
+});
+
+const lowStockReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.lowStockReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "low-stock");
+  sendSuccess(res, { message: "Low stock report", data });
+});
+
+const suppliersReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.suppliersReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "suppliers");
+  sendSuccess(res, { message: "Suppliers report", data });
+});
+
+const inventoryUsageReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.inventoryUsageReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "inventory-usage");
+  sendSuccess(res, { message: "Inventory usage report", data });
+});
+
+const purchaseOrdersReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.purchaseOrdersReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "purchase-orders");
+  sendSuccess(res, { message: "Purchase orders report", data });
+});
+
+// Orders
+const ordersReportPost = asyncHandler(async (req, res) => {
+  const data = await reportsService.ordersReportPost({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "orders-report");
+  sendSuccess(res, { message: "Orders report", data });
+});
+
+const kotReportPost = asyncHandler(async (req, res) => {
+  const data = await reportsService.kotReportPost({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "kot-report");
+  sendSuccess(res, { message: "KOT report", data });
+});
+
+const cancelledOrdersReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.cancelledOrdersReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "cancelled-orders");
+  sendSuccess(res, { message: "Cancelled orders report", data });
+});
+
+const tableOccupancyReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.tableOccupancyReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "table-occupancy");
+  sendSuccess(res, { message: "Table occupancy report", data });
+});
+
+const qrOrdersReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.qrOrdersReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "qr-orders");
+  sendSuccess(res, { message: "QR orders report", data });
+});
+
+// Staff
+const staffDirectoryReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.staffDirectoryReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "staff-directory");
+  sendSuccess(res, { message: "Staff directory report", data });
+});
+
+const attendanceReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.attendanceReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "attendance");
+  sendSuccess(res, { message: "Attendance report", data });
+});
+
+const departmentReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.departmentReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "department-report");
+  sendSuccess(res, { message: "Department report", data });
+});
+
+const shiftsReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.shiftsReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "shifts-report");
+  sendSuccess(res, { message: "Shifts report", data });
+});
+
+// Financial
+const expensesReportPost = asyncHandler(async (req, res) => {
+  const data = await reportsService.expensesReportPost({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "expenses-report");
+  sendSuccess(res, { message: "Expenses report", data });
+});
+
+const profitLossReportPost = asyncHandler(async (req, res) => {
+  const data = await reportsService.profitLossReportPost({ body: req.body, tenant: req.tenant });
+  sendSuccess(res, { message: "Profit & loss report", data });
+});
+
+const billSettlementReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.billSettlementReport({ body: req.body, tenant: req.tenant });
+  if (req.body.export === "csv") return _csvOrJson(res, data.records, "bill-settlement");
+  sendSuccess(res, { message: "Bill settlement report", data });
+});
+
+const taxSummaryReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.taxSummaryReport({ body: req.body, tenant: req.tenant });
+  sendSuccess(res, { message: "Tax summary report", data });
+});
+
 module.exports = {
   dailySales,
   monthlySales,
@@ -202,4 +348,29 @@ module.exports = {
   inventoryReport,
   expensesDetailReport,
   profitLossReport,
+  // POST-based
+  salesReportPost,
+  salesSummaryReport,
+  revenueReport,
+  hourlySalesReport,
+  topItemsReport,
+  salesByCategoryReport,
+  inventoryStockReport,
+  lowStockReport,
+  suppliersReport,
+  inventoryUsageReport,
+  purchaseOrdersReport,
+  ordersReportPost,
+  kotReportPost,
+  cancelledOrdersReport,
+  tableOccupancyReport,
+  qrOrdersReport,
+  staffDirectoryReport,
+  attendanceReport,
+  departmentReport,
+  shiftsReport,
+  expensesReportPost,
+  profitLossReportPost,
+  billSettlementReport,
+  taxSummaryReport,
 };

@@ -141,7 +141,7 @@ router.get(
   controller.auditLogsReport,
 );
 
-// ── Full Report Endpoints ─────────────────────────────────────────────────────
+// ── Full Report Endpoints (GET) ───────────────────────────────────────────────
 router.get(
   "/inventory",
   authorize("reports:read"),
@@ -159,6 +159,165 @@ router.get(
   authorize("reports:read"),
   validate(validator.reportQuery),
   controller.profitLossReport,
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// POST REPORT ENDPOINTS
+// Body: { branchId, startDate, endDate, groupBy, page, limit, export, ...filters }
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Sales Reports
+router.post(
+  "/sales",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.salesReportPost,
+);
+router.post(
+  "/sales/summary",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.salesSummaryReport,
+);
+router.post(
+  "/sales/revenue",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.revenueReport,
+);
+router.post(
+  "/sales/hourly",
+  authorize("reports:read"),
+  validate(validator.hourlyBody),
+  controller.hourlySalesReport,
+);
+router.post(
+  "/top-selling-items",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.topItemsReport,
+);
+router.post(
+  "/sales/category",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.salesByCategoryReport,
+);
+
+// Inventory Reports
+router.post(
+  "/inventory",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.inventoryStockReport,
+);
+router.post(
+  "/inventory/low-stock",
+  authorize("reports:read"),
+  validate(validator.branchOnlyBody),
+  controller.lowStockReport,
+);
+router.post(
+  "/inventory/suppliers",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.suppliersReport,
+);
+router.post(
+  "/inventory/usage",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.inventoryUsageReport,
+);
+router.post(
+  "/inventory/purchase-orders",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.purchaseOrdersReport,
+);
+
+// Order Reports
+router.post(
+  "/orders",
+  authorize("reports:read"),
+  validate(validator.orderBody),
+  controller.ordersReportPost,
+);
+router.post(
+  "/orders/cancelled",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.cancelledOrdersReport,
+);
+router.post(
+  "/kot",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.kotReportPost,
+);
+router.post(
+  "/tables/occupancy",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.tableOccupancyReport,
+);
+router.post(
+  "/qr-orders",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.qrOrdersReport,
+);
+
+// Staff Reports
+router.post(
+  "/staff",
+  authorize("reports:read"),
+  validate(validator.staffBody),
+  controller.staffDirectoryReport,
+);
+router.post(
+  "/staff/attendance",
+  authorize("reports:read"),
+  validate(validator.staffBody),
+  controller.attendanceReport,
+);
+router.post(
+  "/staff/department",
+  authorize("reports:read"),
+  validate(validator.staffBody),
+  controller.departmentReport,
+);
+router.post(
+  "/staff/shifts",
+  authorize("reports:read"),
+  validate(validator.staffBody),
+  controller.shiftsReport,
+);
+
+// Financial Reports
+router.post(
+  "/expenses",
+  authorize("reports:read"),
+  validate(validator.expensesBody),
+  controller.expensesReportPost,
+);
+router.post(
+  "/financial/profit-loss",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.profitLossReportPost,
+);
+router.post(
+  "/bills/settlement",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.billSettlementReport,
+);
+router.post(
+  "/financial/tax",
+  authorize("reports:read"),
+  validate(validator.reportBody),
+  controller.taxSummaryReport,
 );
 
 module.exports = router;
