@@ -6,7 +6,7 @@ const { signAccessToken, signRefreshToken, hashToken, createPasswordResetToken }
 const userRepository = require("../repositories/user.repository");
 const roleRepository = require("../../role/repositories/role.repository");
 
-const publicUser = (user, menus = []) => ({
+const publicUser = (user, roleData = {}) => ({
   id: user._id,
   name: user.name,
   email: user.email,
@@ -18,13 +18,15 @@ const publicUser = (user, menus = []) => ({
   roleId: user.roleId ?? null,
   permissions: user.permissions,
   status: user.status,
-  menus,
+  permissionIds: roleData.menus || [],
+  menus: roleData.menus || [],
 });
 
 const resolveMenus = async (user) => {
-  if (!user.roleId) return [];
+  if (!user.roleId) return {};
   const role = await roleRepository.findOne({ _id: user.roleId, status: "active" });
-  return role ? (role.menus || []) : [];
+  if (!role) return {};
+  return { menus: role.menus || [] };
 };
 
 const issueTokens = async (user) => {
@@ -48,8 +50,8 @@ const register = async (payload) => {
 
   const user = await userRepository.create(payload);
   const authUser = await userRepository.findByEmailForAuth(user.restaurantId, user.email);
-  const [tokens, menus] = await Promise.all([issueTokens(authUser), resolveMenus(authUser)]);
-  return { user: publicUser(authUser, menus), tokens };
+  const [tokens, roleData] = await Promise.all([issueTokens(authUser), resolveMenus(authUser)]);
+  return { user: publicUser(authUser, roleData), tokens };
 };
 
 const login = async ({ restaurantId, email, password, branchId }) => {
@@ -62,8 +64,8 @@ const login = async ({ restaurantId, email, password, branchId }) => {
     throw new AppError("User does not have access to selected branch", httpStatus.FORBIDDEN);
   }
 
-  const [tokens, menus] = await Promise.all([issueTokens(user), resolveMenus(user)]);
-  return { user: publicUser(user, menus), tokens };
+  const [tokens, roleData] = await Promise.all([issueTokens(user), resolveMenus(user)]);
+  return { user: publicUser(user, roleData), tokens };
 };
 
 const refresh = async (refreshToken) => {
@@ -73,8 +75,8 @@ const refresh = async (refreshToken) => {
   if (!user || user.refreshTokenHash !== hashToken(refreshToken) || user.tokenVersion !== payload.tokenVersion) {
     throw new AppError("Invalid refresh token", httpStatus.UNAUTHORIZED);
   }
-  const [tokens, menus] = await Promise.all([issueTokens(user), resolveMenus(user)]);
-  return { user: publicUser(user, menus), tokens };
+  const [tokens, roleData] = await Promise.all([issueTokens(user), resolveMenus(user)]);
+  return { user: publicUser(user, roleData), tokens };
 };
 
 const logout = async (userId) => {
