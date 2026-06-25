@@ -13,10 +13,32 @@ const router = express.Router();
 router.use(authenticate, enforceBranchAccess, attachTenantScope);
 
 router.get("/overview", authorize("reports:read"), controller.overview);
-router.get("/revenue-summary", authorize("reports:read"), controller.revenueSummary);
-router.get("/order-summary", authorize("reports:read"), controller.orderSummary);
-router.get("/table-summary", authorize("reports:read"), controller.tableSummary);
-router.get("/kitchen-summary", authorize("reports:read"), controller.kitchenSummary);
+router.get(
+  "/revenue-summary",
+  authorize("reports:read"),
+  controller.revenueSummary,
+);
+router.get(
+  "/hourlyRevenue",
+  authorize("reports:read"),
+  validate(validator.hourlyRevenue),
+  controller.hourlyRevenue,
+);
+router.get(
+  "/order-summary",
+  authorize("reports:read"),
+  controller.orderSummary,
+);
+router.get(
+  "/table-summary",
+  authorize("reports:read"),
+  controller.tableSummary,
+);
+router.get(
+  "/kitchen-summary",
+  authorize("reports:read"),
+  controller.kitchenSummary,
+);
 router.get(
   "/top-selling-items",
   authorize("reports:read"),
@@ -29,7 +51,15 @@ router.get(
   validate(validator.recentActivities),
   controller.recentActivities,
 );
-router.get("/customer-summary", authorize("reports:read"), controller.customerSummary);
-router.get("/branch-performance", authorize("reports:read"), controller.branchPerformance);
+router.get(
+  "/customer-summary",
+  authorize("reports:read"),
+  controller.customerSummary,
+);
+router.get(
+  "/branch-performance",
+  authorize("reports:read"),
+  controller.branchPerformance,
+);
 
 module.exports = router;

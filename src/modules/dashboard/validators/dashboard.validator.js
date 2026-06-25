@@ -14,4 +14,10 @@ const recentActivities = {
   }),
 };
 
-module.exports = { topSelling, recentActivities };
+const hourlyRevenue = {
+  query: Joi.object({
+    date: Joi.date().iso().default(() => new Date()),
+  }),
+};
+
+module.exports = { topSelling, recentActivities, hourlyRevenue };

@@ -12,6 +12,14 @@ const revenueSummary = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "Revenue summary", data });
 });
 
+const hourlyRevenue = asyncHandler(async (req, res) => {
+  const data = await dashboardService.getHourlyRevenue({
+    query: req.query,
+    tenant: req.tenant,
+  });
+  sendSuccess(res, { message: "Hourly revenue fetched successfully", data });
+});
+
 const orderSummary = asyncHandler(async (req, res) => {
   const data = await dashboardService.getOrderSummary({ tenant: req.tenant });
   sendSuccess(res, { message: "Order summary", data });
@@ -56,6 +64,7 @@ const branchPerformance = asyncHandler(async (req, res) => {
 module.exports = {
   overview,
   revenueSummary,
+  hourlyRevenue,
   orderSummary,
   tableSummary,
   kitchenSummary,
