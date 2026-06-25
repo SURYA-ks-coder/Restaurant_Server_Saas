@@ -36,9 +36,25 @@ const itemsQuery = {
   }),
 };
 
+const expensesQuery = {
+  query: Joi.object({
+    startDate: Joi.date().iso(),
+    endDate: Joi.date().iso(),
+    branchId: objectId,
+    category: Joi.string().trim(),
+    paymentMode: Joi.string().valid("cash", "card", "upi", "bank"),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(200).default(20),
+    sortBy: Joi.string(),
+    sortOrder: Joi.string().valid("asc", "desc").default("desc"),
+    export: Joi.string().valid("csv"),
+  }),
+};
+
 module.exports = {
   range: { query: dateRange },
   dashboardRange: { query: dashboardRange },
   reportQuery,
   itemsQuery,
+  expensesQuery,
 };

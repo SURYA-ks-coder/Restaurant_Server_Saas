@@ -141,4 +141,24 @@ router.get(
   controller.auditLogsReport,
 );
 
+// ── Full Report Endpoints ─────────────────────────────────────────────────────
+router.get(
+  "/inventory",
+  authorize("reports:read"),
+  validate(validator.reportQuery),
+  controller.inventoryReport,
+);
+router.get(
+  "/expenses",
+  authorize("reports:read"),
+  validate(validator.expensesQuery),
+  controller.expensesDetailReport,
+);
+router.get(
+  "/profit-loss",
+  authorize("reports:read"),
+  validate(validator.reportQuery),
+  controller.profitLossReport,
+);
+
 module.exports = router;

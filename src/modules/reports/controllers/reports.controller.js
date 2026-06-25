@@ -160,6 +160,22 @@ const auditLogsReport = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "Audit logs", data });
 });
 
+const inventoryReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.inventoryReport({ query: req.query, tenant: req.tenant });
+  sendSuccess(res, { message: "Inventory report", data });
+});
+
+const expensesDetailReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.expensesDetailReport({ query: req.query, tenant: req.tenant });
+  if (req.query.export === "csv") return _csvOrJson(res, data.records || [], "expenses-report");
+  sendSuccess(res, { message: "Expenses report", data });
+});
+
+const profitLossReport = asyncHandler(async (req, res) => {
+  const data = await reportsService.profitLossReport({ query: req.query, tenant: req.tenant });
+  sendSuccess(res, { message: "Profit & loss report", data });
+});
+
 module.exports = {
   dailySales,
   monthlySales,
@@ -183,4 +199,7 @@ module.exports = {
   taxDetailReport,
   branchesReport,
   auditLogsReport,
+  inventoryReport,
+  expensesDetailReport,
+  profitLossReport,
 };

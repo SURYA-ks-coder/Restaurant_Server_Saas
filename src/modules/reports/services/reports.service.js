@@ -4,6 +4,8 @@ const Expense = require("../../expense/models/Expense.model");
 const Kot = require("../../kot/models/Kot.model");
 const Customer = require("../../customer/Customer.model");
 const User = require("../../auth/models/User.model");
+const InventoryItem = require("../../inventory/models/InventoryItem.model");
+const InventoryTransaction = require("../../inventory/models/InventoryTransaction.model");
 const {
   parsePagination,
   paginationMeta,
@@ -636,6 +638,326 @@ const auditLogsReport = async ({ query, tenant }) => {
   };
 };
 
+// ── Inventory Report ──────────────────────────────────────────────────────────
+const inventoryReport = async ({ query, tenant }) => {
+  const base = {
+    restaurantId: tenant.restaurantId,
+    branchId: query.branchId ? _toObjId(query.branchId) : tenant.branchId,
+  };
+  const txFilter = { ...base };
+  if (query.startDate || query.endDate) {
+    txFilter.createdAt = {};
+    if (query.startDate) txFilter.createdAt.$gte = new Date(query.startDate);
+    if (query.endDate) txFilter.createdAt.$lte = new Date(query.endDate);
+  }
+
+  const [summaryAgg, lowStockItems, categoryBreakdown, recentTransactions] = await Promise.all([
+    InventoryItem.aggregate([
+      { $match: base },
+      {
+        $group: {
+          _id: null,
+          totalItems: { $sum: 1 },
+          activeItems: { $sum: { $cond: [{ $eq: ["$status", "active"] }, 1, 0] } },
+          totalValue: { $sum: { $multiply: ["$stockQuantity", "$purchasePrice"] } },
+          outOfStock: { $sum: { $cond: [{ $eq: ["$stockQuantity", 0] }, 1, 0] } },
+          lowStockCount: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $gt: ["$minimumStock", 0] },
+                    { $lte: ["$stockQuantity", "$minimumStock"] },
+                    { $gt: ["$stockQuantity", 0] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ]),
+    InventoryItem.find({
+      ...base,
+      status: "active",
+      $expr: {
+        $and: [{ $gt: ["$minimumStock", 0] }, { $lte: ["$stockQuantity", "$minimumStock"] }],
+      },
+    })
+      .sort({ stockQuantity: 1 })
+      .limit(20)
+      .select("materialName category unit stockQuantity minimumStock purchasePrice")
+      .lean(),
+    InventoryItem.aggregate([
+      { $match: base },
+      {
+        $group: {
+          _id: "$category",
+          itemCount: { $sum: 1 },
+          totalValue: { $sum: { $multiply: ["$stockQuantity", "$purchasePrice"] } },
+          totalStock: { $sum: "$stockQuantity" },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          category: { $ifNull: ["$_id", "Uncategorised"] },
+          itemCount: 1,
+          totalValue: { $round: ["$totalValue", 2] },
+          totalStock: 1,
+        },
+      },
+      { $sort: { totalValue: -1 } },
+    ]),
+    InventoryTransaction.find(txFilter)
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .populate("inventoryItemId", "materialName unit")
+      .populate("createdBy", "name")
+      .lean(),
+  ]);
+
+  const s = summaryAgg[0] || {
+    totalItems: 0,
+    activeItems: 0,
+    totalValue: 0,
+    outOfStock: 0,
+    lowStockCount: 0,
+  };
+
+  return {
+    summary: {
+      totalItems: s.totalItems,
+      activeItems: s.activeItems,
+      totalInventoryValue: Number((s.totalValue || 0).toFixed(2)),
+      outOfStockItems: s.outOfStock,
+      lowStockItems: s.lowStockCount,
+    },
+    lowStockAlerts: lowStockItems.map((item) => ({
+      itemId: item._id,
+      materialName: item.materialName,
+      category: item.category || "Uncategorised",
+      unit: item.unit,
+      currentStock: item.stockQuantity,
+      minimumStock: item.minimumStock,
+      purchasePrice: item.purchasePrice,
+    })),
+    categoryBreakdown,
+    recentTransactions: recentTransactions.map((t) => ({
+      transactionId: t._id,
+      itemName: t.inventoryItemId?.materialName || "Unknown",
+      unit: t.inventoryItemId?.unit || "",
+      type: t.type,
+      quantity: t.quantity,
+      previousQuantity: t.previousQuantity,
+      updatedQuantity: t.updatedQuantity,
+      notes: t.notes || null,
+      createdBy: t.createdBy?.name || "Unknown",
+      createdAt: t.createdAt,
+    })),
+  };
+};
+
+// ── Expenses Detail Report ────────────────────────────────────────────────────
+const expensesDetailReport = async ({ query, tenant }) => {
+  const { page, limit, skip } = parsePagination(query);
+  const base = {
+    restaurantId: tenant.restaurantId,
+    branchId: query.branchId ? _toObjId(query.branchId) : tenant.branchId,
+    isDeleted: false,
+  };
+  const filter = { ...base };
+  if (query.startDate || query.endDate) {
+    filter.expenseDate = {};
+    if (query.startDate) filter.expenseDate.$gte = new Date(query.startDate);
+    if (query.endDate) filter.expenseDate.$lte = new Date(query.endDate);
+  }
+  if (query.category) filter.category = query.category;
+  if (query.paymentMode) filter.paymentMode = query.paymentMode;
+
+  const [summaryAgg, byCategory, byPaymentMode, records, total] = await Promise.all([
+    Expense.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: null,
+          totalAmount: { $sum: "$amount" },
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+    Expense.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: "$category",
+          amount: { $sum: "$amount" },
+          count: { $sum: 1 },
+        },
+      },
+      { $project: { _id: 0, category: "$_id", amount: 1, count: 1 } },
+      { $sort: { amount: -1 } },
+    ]),
+    Expense.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: "$paymentMode",
+          amount: { $sum: "$amount" },
+          count: { $sum: 1 },
+        },
+      },
+      { $project: { _id: 0, paymentMode: "$_id", amount: 1, count: 1 } },
+      { $sort: { amount: -1 } },
+    ]),
+    Expense.find(filter)
+      .sort({ expenseDate: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("createdBy", "name")
+      .lean(),
+    Expense.countDocuments(filter),
+  ]);
+
+  const s = summaryAgg[0] || { totalAmount: 0, count: 0 };
+
+  return {
+    totalAmount: s.totalAmount,
+    totalCount: s.count,
+    byCategory,
+    byPaymentMode,
+    records: records.map((e) => ({
+      expenseId: e._id,
+      expenseName: e.expenseName,
+      category: e.category,
+      amount: e.amount,
+      expenseDate: e.expenseDate,
+      paymentMode: e.paymentMode,
+      notes: e.notes || null,
+      createdBy: e.createdBy?.name || "Unknown",
+    })),
+    meta: paginationMeta({ total, page, limit }),
+  };
+};
+
+// ── Profit & Loss Report ──────────────────────────────────────────────────────
+const profitLossReport = async ({ query, tenant }) => {
+  const billFilter = _reportFilter({ query, tenant });
+  const expenseBase = {
+    restaurantId: tenant.restaurantId,
+    branchId: query.branchId ? _toObjId(query.branchId) : tenant.branchId,
+    isDeleted: false,
+  };
+  const expenseFilter = { ...expenseBase };
+  if (query.startDate || query.endDate) {
+    expenseFilter.expenseDate = {};
+    if (query.startDate) expenseFilter.expenseDate.$gte = new Date(query.startDate);
+    if (query.endDate) expenseFilter.expenseDate.$lte = new Date(query.endDate);
+  }
+
+  const activeBillFilter = { ...billFilter, status: { $ne: "cancelled" } };
+
+  const [salesAgg, expenseAgg, monthlySales, monthlyExpenses] = await Promise.all([
+    Bill.aggregate([
+      { $match: activeBillFilter },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$grandTotal" },
+          totalCOGS: { $sum: "$subTotal" },
+          totalTax: { $sum: "$taxTotal" },
+          totalDiscount: { $sum: "$discountTotal" },
+          totalOrders: { $sum: 1 },
+        },
+      },
+    ]),
+    Expense.aggregate([
+      { $match: expenseFilter },
+      { $group: { _id: null, totalExpenses: { $sum: "$amount" }, count: { $sum: 1 } } },
+    ]),
+    Bill.aggregate([
+      { $match: activeBillFilter },
+      {
+        $group: {
+          _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
+          revenue: { $sum: "$grandTotal" },
+          cogs: { $sum: "$subTotal" },
+          tax: { $sum: "$taxTotal" },
+          orders: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]),
+    Expense.aggregate([
+      { $match: expenseFilter },
+      {
+        $group: {
+          _id: { year: { $year: "$expenseDate" }, month: { $month: "$expenseDate" } },
+          expenses: { $sum: "$amount" },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]),
+  ]);
+
+  const s = salesAgg[0] || {
+    totalRevenue: 0,
+    totalCOGS: 0,
+    totalTax: 0,
+    totalDiscount: 0,
+    totalOrders: 0,
+  };
+  const e = expenseAgg[0] || { totalExpenses: 0, count: 0 };
+  const grossProfit = Number((s.totalRevenue - s.totalCOGS).toFixed(2));
+  const netProfit = Number((grossProfit - e.totalExpenses).toFixed(2));
+
+  const expenseMap = {};
+  monthlyExpenses.forEach((row) => {
+    const key = `${row._id.year}-${String(row._id.month).padStart(2, "0")}`;
+    expenseMap[key] = row.expenses;
+  });
+
+  const periodBreakdown = monthlySales.map((row) => {
+    const key = `${row._id.year}-${String(row._id.month).padStart(2, "0")}`;
+    const exp = expenseMap[key] || 0;
+    const gross = Number((row.revenue - row.cogs).toFixed(2));
+    return {
+      period: key,
+      revenue: row.revenue,
+      cogs: row.cogs,
+      grossProfit: gross,
+      expenses: exp,
+      netProfit: Number((gross - exp).toFixed(2)),
+      tax: row.tax,
+      orders: row.orders,
+    };
+  });
+
+  return {
+    summary: {
+      totalRevenue: s.totalRevenue,
+      totalCOGS: s.totalCOGS,
+      grossProfit,
+      totalExpenses: e.totalExpenses,
+      netProfit,
+      totalTax: s.totalTax,
+      totalDiscount: s.totalDiscount,
+      totalOrders: s.totalOrders,
+      grossMargin:
+        s.totalRevenue > 0
+          ? Number(((grossProfit / s.totalRevenue) * 100).toFixed(2))
+          : 0,
+      netMargin:
+        s.totalRevenue > 0
+          ? Number(((netProfit / s.totalRevenue) * 100).toFixed(2))
+          : 0,
+    },
+    periodBreakdown,
+  };
+};
+
 module.exports = {
   dailySales,
   monthlySales,
@@ -659,4 +981,7 @@ module.exports = {
   taxDetailReport,
   branchesReport,
   auditLogsReport,
+  inventoryReport,
+  expensesDetailReport,
+  profitLossReport,
 };
