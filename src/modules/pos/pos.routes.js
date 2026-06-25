@@ -33,6 +33,7 @@ router.get(
   controller.list,
 );
 router.post("/ordersBydate", authorize("pos:read"), controller.todayOrders);
+router.get("/liveStatus", authorize("pos:read"), controller.liveStatus);
 
 router.get(
   "/:id",

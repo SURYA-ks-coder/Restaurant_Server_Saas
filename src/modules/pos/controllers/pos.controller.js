@@ -196,6 +196,15 @@ const todayOrders = async (req, res, next) => {
   }
 };
 
+const liveStatus = asyncHandler(async (req, res) => {
+  const data = await posService.liveStatus({ tenant: req.tenant });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Live status fetched successfully",
+    data,
+  });
+});
+
 module.exports = {
   create,
   update,
@@ -211,4 +220,5 @@ module.exports = {
   get,
   list,
   todayOrders,
+  liveStatus,
 };

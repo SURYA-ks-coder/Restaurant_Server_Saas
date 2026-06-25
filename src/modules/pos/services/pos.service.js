@@ -269,6 +269,16 @@ const listBills = async ({ query, tenant }) => {
   return { items, meta: paginationMeta({ total, page, limit }) };
 };
 
+const STATUS_LABELS = {
+  completed: "Completed",
+  preparing: "Preparing",
+  ready_to_serve: "Ready to Serve",
+  pending_payment: "Pending Payment",
+  cancelled: "Cancelled",
+  held: "Held",
+  pending: "Pending",
+};
+
 const todayOrders = async ({ body, tenant }) => {
   const targetDate = body?.date ? new Date(body.date) : new Date();
   const startOfDay = new Date(targetDate);
@@ -282,7 +292,52 @@ const todayOrders = async ({ body, tenant }) => {
   };
   const dateRange = { $gte: startOfDay, $lte: endOfDay };
 
-  const [billSummary, kotCount, tableStats] = await Promise.all([
+  const [statusAgg, summaryAgg, kotCount, tableStats] = await Promise.all([
+    // Order status distribution — join KOTs to derive logical status
+    billRepository.model.aggregate([
+      { $match: { ...baseScope, createdAt: dateRange } },
+      {
+        $lookup: {
+          from: "kots",
+          let: { billId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$billId", "$$billId"] } } },
+            { $project: { status: 1, _id: 0 } },
+          ],
+          as: "_kots",
+        },
+      },
+      {
+        $addFields: {
+          _kotStatuses: "$_kots.status",
+          logicalStatus: {
+            $switch: {
+              branches: [
+                { case: { $eq: ["$status", "cancelled"] }, then: "cancelled" },
+                { case: { $eq: ["$status", "completed"] }, then: "completed" },
+                { case: { $eq: ["$status", "held"] }, then: "held" },
+                {
+                  case: { $in: ["preparing", "$_kots.status"] },
+                  then: "preparing",
+                },
+                {
+                  case: { $in: ["ready", "$_kots.status"] },
+                  then: "ready_to_serve",
+                },
+                {
+                  case: { $eq: ["$paymentStatus", "pending"] },
+                  then: "pending_payment",
+                },
+              ],
+              default: "pending",
+            },
+          },
+        },
+      },
+      { $group: { _id: "$logicalStatus", count: { $sum: 1 } } },
+    ]),
+
+    // Header stats — total orders and revenue
     billRepository.model.aggregate([
       { $match: { ...baseScope, createdAt: dateRange } },
       {
@@ -290,15 +345,18 @@ const todayOrders = async ({ body, tenant }) => {
           _id: null,
           ordersToday: { $sum: 1 },
           todayRevenue: { $sum: "$grandTotal" },
-          byStatus: { $push: "$status" },
         },
       },
     ]),
+
+    // Kitchen queue — active KOTs today
     kotRepository.model.countDocuments({
       ...baseScope,
       status: { $in: ["pending", "preparing"] },
       createdAt: dateRange,
     }),
+
+    // Tables active vs total
     tableRepository.model.aggregate([
       { $match: baseScope },
       {
@@ -313,20 +371,120 @@ const todayOrders = async ({ body, tenant }) => {
     ]),
   ]);
 
-  const s = billSummary[0] || { ordersToday: 0, todayRevenue: 0, byStatus: [] };
+  const s = summaryAgg[0] || { ordersToday: 0, todayRevenue: 0 };
   const t = tableStats[0] || { total: 0, occupied: 0 };
+  const total = s.ordersToday;
 
-  const statusBreakdown = s.byStatus.reduce((acc, st) => {
-    acc[st] = (acc[st] || 0) + 1;
-    return acc;
-  }, {});
+  const orderStatusBreakdown = statusAgg.map(({ _id, count }) => ({
+    status: _id,
+    label: STATUS_LABELS[_id] || _id,
+    count,
+    percentage: total > 0 ? Number(((count / total) * 100).toFixed(0)) : 0,
+  }));
 
   return {
-    ordersToday: s.ordersToday,
+    ordersToday: total,
     todayRevenue: Number(s.todayRevenue.toFixed(2)),
     kitchenQueue: kotCount,
     tablesActive: { occupied: t.occupied, total: t.total },
-    orderStatusBreakdown: statusBreakdown,
+    orderStatusBreakdown,
+  };
+};
+
+const liveStatus = async ({ tenant }) => {
+  const baseScope = {
+    restaurantId: tenant.restaurantId,
+    branchId: tenant.branchId,
+  };
+
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
+  const todayRange = { $gte: startOfDay, $lte: endOfDay };
+
+  const [prepTimeAgg, readyCount, urgentCount, chefEffAgg, diningAgg] =
+    await Promise.all([
+      // Avg prep time from KOTs that have both timestamps (all time, recent)
+      kotRepository.model.aggregate([
+        {
+          $match: {
+            ...baseScope,
+            preparationStartedAt: { $ne: null },
+            readyAt: { $ne: null },
+            createdAt: todayRange,
+          },
+        },
+        {
+          $addFields: {
+            prepMinutes: {
+              $divide: [
+                { $subtract: ["$readyAt", "$preparationStartedAt"] },
+                60000,
+              ],
+            },
+          },
+        },
+        { $group: { _id: null, avgPrepTime: { $avg: "$prepMinutes" } } },
+      ]),
+
+      // Ready orders — active KOTs currently in "ready" state
+      kotRepository.model.countDocuments({
+        ...baseScope,
+        status: "ready",
+      }),
+
+      // Urgent orders — high-priority KOTs still pending or preparing
+      kotRepository.model.countDocuments({
+        ...baseScope,
+        priority: "high",
+        status: { $in: ["pending", "preparing"] },
+      }),
+
+      // Chef efficiency — served / (served + cancelled) for today
+      kotRepository.model.aggregate([
+        { $match: { ...baseScope, createdAt: todayRange } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            served: {
+              $sum: { $cond: [{ $eq: ["$status", "served"] }, 1, 0] },
+            },
+          },
+        },
+      ]),
+
+      // Dining status — table counts grouped by status
+      tableRepository.model.aggregate([
+        { $match: baseScope },
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
+    ]);
+
+  const avgPrepTime = prepTimeAgg[0]
+    ? Math.round(prepTimeAgg[0].avgPrepTime)
+    : 0;
+
+  const effRow = chefEffAgg[0] || { total: 0, served: 0 };
+  const chefEfficiency =
+    effRow.total > 0
+      ? Number(((effRow.served / effRow.total) * 100).toFixed(0))
+      : 0;
+
+  const diningMap = { available: 0, occupied: 0, reserved: 0, cleaning: 0 };
+  for (const { _id, count } of diningAgg) {
+    if (_id in diningMap) diningMap[_id] = count;
+  }
+
+  return {
+    kitchenPerformance: {
+      avgPrepTime,
+      readyOrders: readyCount,
+      urgentOrders: urgentCount,
+      chefEfficiency,
+    },
+    diningStatus: diningMap,
   };
 };
 
@@ -539,4 +697,5 @@ module.exports = {
   cancelBill,
   generateInvoice,
   todayOrders,
+  liveStatus,
 };
