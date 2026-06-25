@@ -8,6 +8,7 @@ const {
 const inventoryRepository = require("../repositories/inventory.repository");
 const inventoryTransactionRepository = require("../repositories/inventoryTransaction.repository");
 const { getIo } = require("../../../sockets");
+const { notify } = require("../../../sockets/notify");
 
 const createInventoryItem = async ({ payload, tenant, user }) => {
   const exists = await inventoryRepository.findOne({
@@ -112,6 +113,17 @@ const adjustStock = async ({ id, payload, tenant, user, type }) => {
       stockQuantity: updatedItem.stockQuantity,
       minimumStock: updatedItem.minimumStock,
       branchId: tenant.branchId,
+    });
+    notify(tenant.branchId, {
+      type: "low_stock",
+      title: "Low Stock Alert",
+      description: `${updatedItem.materialName} running low (${updatedItem.stockQuantity} left)`,
+      meta: {
+        itemId: updatedItem._id,
+        materialName: updatedItem.materialName,
+        stockQuantity: updatedItem.stockQuantity,
+        minimumStock: updatedItem.minimumStock,
+      },
     });
   }
 

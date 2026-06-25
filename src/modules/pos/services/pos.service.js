@@ -12,6 +12,7 @@ const {
   paginationMeta,
 } = require("../../../helpers/queryBuilder");
 const { getIo } = require("../../../sockets");
+const { notify, checkSalesMilestone } = require("../../../sockets/notify");
 const kotRepository = require("../../kot/repositories/kot.repository");
 const tableRepository = require("../../table/repositories/table.repository");
 const { updateTableStatus } = require("../../table/services/table.service");
@@ -213,6 +214,15 @@ const createBill = async ({ payload, tenant, user }) => {
       });
     }
     console.log("Order created:", bill);
+
+    notify(tenant.branchId, {
+      type: "order_created",
+      title: `New Order #${bill.billNo}`,
+      description: payload.tableId
+        ? `Table ${payload.tableName || ""} · ${payload.items.length} items`
+        : `${payload.orderType} · ${payload.items.length} items`,
+      meta: { billId: bill._id, orderType: payload.orderType },
+    });
 
     return bill;
   } catch (error) {
@@ -627,6 +637,48 @@ const recordPayment = async ({ id, payload, tenant, user }) => {
       billId: bill._id,
       paymentStatus: updatedBill.paymentStatus,
     });
+
+  if (updatedBill.paymentStatus === "paid") {
+    notify(tenant.branchId, {
+      type: "payment_received",
+      title: "Payment Received",
+      description: `Order #${updatedBill.billNo} · ₹${updatedBill.grandTotal}`,
+      meta: { billId: updatedBill._id, grandTotal: updatedBill.grandTotal },
+    });
+  }
+
+  if (updatedBill.status === "completed") {
+    notify(tenant.branchId, {
+      type: "order_completed",
+      title: `Order #${updatedBill.billNo} Completed`,
+      description: updatedBill.tableName
+        ? `Table ${updatedBill.tableName}`
+        : updatedBill.orderType,
+      meta: { billId: updatedBill._id },
+    });
+
+    // Sales milestone check — compare today's revenue before and after this payment
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const [agg] = await billRepository.model.aggregate([
+      {
+        $match: {
+          restaurantId: tenant.restaurantId,
+          branchId: tenant.branchId,
+          paymentStatus: "paid",
+          createdAt: { $gte: startOfDay },
+        },
+      },
+      { $group: { _id: null, total: { $sum: "$grandTotal" } } },
+    ]);
+    const currentRevenue = agg?.total || 0;
+    checkSalesMilestone(
+      tenant.branchId,
+      currentRevenue - updatedBill.grandTotal,
+      currentRevenue,
+    );
+  }
+
   return updatedBill;
 };
 
@@ -668,7 +720,14 @@ const cancelBill = async ({ id, tenant, user }) => {
   ensureBillEditable(bill);
   bill.status = "cancelled";
   bill.updatedBy = user.id;
-  return bill.save();
+  const saved = await bill.save();
+  notify(tenant.branchId, {
+    type: "order_cancelled",
+    title: `Order #${bill.billNo} Cancelled`,
+    description: bill.tableName ? `Table ${bill.tableName}` : bill.orderType,
+    meta: { billId: bill._id },
+  });
+  return saved;
 };
 
 const generateInvoice = async ({ id, tenant }) => {

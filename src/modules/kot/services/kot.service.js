@@ -8,6 +8,7 @@ const {
 const kotRepository = require("../repositories/kot.repository");
 const billRepository = require("../../pos/repositories/pos.repository");
 const { getIo } = require("../../../sockets");
+const { notify } = require("../../../sockets/notify");
 
 const createKot = async ({ payload, tenant, user }) => {
   const bill = await billRepository.findOne({
@@ -31,6 +32,14 @@ const createKot = async ({ payload, tenant, user }) => {
       branchId: tenant.branchId,
       status: kot.status,
     });
+
+  notify(tenant.branchId, {
+    type: "kot_created",
+    title: "New KOT",
+    description: `${kot.items?.length || 0} items · ${kot.kitchenSection}`,
+    meta: { kotId: kot._id, billId: payload.billId },
+  });
+
   return kot;
 };
 
@@ -106,6 +115,17 @@ const updateKotStatus = async ({ id, payload, tenant, user }) => {
       kotId: id,
       status: updated.status,
     });
+
+  if (payload.status === "ready") {
+    notify(tenant.branchId, {
+      type: "kot_ready",
+      title: "Order Ready to Serve",
+      description: kot.tableName
+        ? `Table ${kot.tableName} is ready`
+        : `KOT is ready for serving`,
+      meta: { kotId: id, billId: kot.billId },
+    });
+  }
 
   return updated;
 };
@@ -194,6 +214,14 @@ const markKotServed = async ({ id, tenant, user }) => {
   const updated = await kot.save();
   const io = getIo();
   if (io) io.to(`branch:${tenant.branchId}`).emit("kot:served", { kotId: id });
+
+  notify(tenant.branchId, {
+    type: "kot_served",
+    title: "Order Served",
+    description: kot.tableName ? `Table ${kot.tableName} served` : "Order served",
+    meta: { kotId: id },
+  });
+
   return updated;
 };
 

@@ -8,6 +8,7 @@ const {
 const reservationRepository = require("../repositories/tableReservation.repository");
 const tableRepository = require("../../table/repositories/table.repository");
 const { getIo } = require("../../../sockets");
+const { notify } = require("../../../sockets/notify");
 
 const ACTIVE_STATUSES = ["pending", "confirmed", "seated"];
 const FINAL_STATUSES = ["completed", "cancelled", "no_show"];
@@ -127,6 +128,25 @@ const createReservation = async ({ payload, tenant, user }) => {
     tenant,
     user,
   });
+
+  if (reservation.status === "confirmed") {
+    const startTime = new Date(reservation.startAt).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    notify(tenant.branchId, {
+      type: "reservation_confirmed",
+      title: "Reservation Confirmed",
+      description: `${startTime} · Party of ${reservation.guestCount}`,
+      meta: {
+        reservationId: reservation._id,
+        tableId: reservation.tableId,
+        guestCount: reservation.guestCount,
+        startAt: reservation.startAt,
+      },
+    });
+  }
+
   return reservation.populate(populate);
 };
 
@@ -203,6 +223,32 @@ const updateReservationStatus = async ({ id, payload, tenant, user }) => {
     tenant,
     user,
   });
+
+  if (updated.status === "confirmed") {
+    const startTime = new Date(updated.startAt).toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    notify(tenant.branchId, {
+      type: "reservation_confirmed",
+      title: "Reservation Confirmed",
+      description: `${startTime} · Party of ${updated.guestCount}`,
+      meta: {
+        reservationId: updated._id,
+        tableId: updated.tableId,
+        guestCount: updated.guestCount,
+        startAt: updated.startAt,
+      },
+    });
+  } else if (updated.status === "cancelled") {
+    notify(tenant.branchId, {
+      type: "reservation_cancelled",
+      title: "Reservation Cancelled",
+      description: `Party of ${updated.guestCount}`,
+      meta: { reservationId: updated._id, reason: updated.cancellationReason },
+    });
+  }
+
   return updated.populate(populate);
 };
 
