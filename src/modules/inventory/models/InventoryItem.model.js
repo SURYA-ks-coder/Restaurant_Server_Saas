@@ -22,6 +22,11 @@ const inventoryItemSchema = new mongoose.Schema(
     minimumStock: { type: Number, default: 0 },
     purchasePrice: { type: Number, default: 0 },
     status: { type: String, enum: ["active", "inactive"], default: "active" },
+    warehouseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Warehouse",
+      default: null,
+    },
   },
   { timestamps: true },
 );

@@ -55,6 +55,7 @@ const kotSchema = new mongoose.Schema(
     },
     tableId: { type: mongoose.Schema.Types.ObjectId, ref: "Table" },
     tableName: String,
+    stockDeducted: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

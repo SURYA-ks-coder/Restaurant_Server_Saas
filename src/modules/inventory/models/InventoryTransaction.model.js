@@ -22,8 +22,13 @@ const inventoryTransactionSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["purchase", "usage", "adjustment", "return"],
+      enum: ["purchase", "usage", "adjustment", "return", "wastage", "transfer_out", "transfer_in"],
       required: true,
+    },
+    referenceType: {
+      type: String,
+      enum: ["manual", "kot", "wastage", "transfer"],
+      default: "manual",
     },
     quantity: { type: Number, required: true },
     previousQuantity: { type: Number, required: true },

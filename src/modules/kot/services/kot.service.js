@@ -7,8 +7,70 @@ const {
 } = require("../../../helpers/queryBuilder");
 const kotRepository = require("../repositories/kot.repository");
 const billRepository = require("../../pos/repositories/pos.repository");
+const inventoryRepository = require("../../inventory/repositories/inventory.repository");
+const inventoryTransactionRepository = require("../../inventory/repositories/inventoryTransaction.repository");
+const Recipe = require("../../inventory/models/Recipe.model");
 const { getIo } = require("../../../sockets");
 const { notify } = require("../../../sockets/notify");
+
+// Deduct ingredients from stock for all items in a KOT based on Recipes.
+// Non-blocking: logs warnings for missing recipes or insufficient stock.
+const deductStockForKot = async ({ kot, tenant, userId }) => {
+  for (const kotItem of kot.items) {
+    const recipe = await Recipe.findOne({
+      menuItemId: kotItem.menuItemId,
+      restaurantId: tenant.restaurantId,
+      branchId: tenant.branchId,
+      isDeleted: false,
+    });
+    if (!recipe) continue;
+
+    for (const ingredient of recipe.ingredients) {
+      const deductQty = ingredient.quantity * (kotItem.quantity || 1);
+      const invItem = await inventoryRepository.findOne({
+        _id: ingredient.inventoryItemId,
+        restaurantId: tenant.restaurantId,
+        branchId: tenant.branchId,
+      });
+      if (!invItem) continue;
+
+      const previousQuantity = invItem.stockQuantity;
+      const updatedQuantity = previousQuantity - deductQty;
+
+      await inventoryRepository.updateById(invItem._id, { stockQuantity: updatedQuantity });
+      await inventoryTransactionRepository.create({
+        restaurantId: tenant.restaurantId,
+        branchId: tenant.branchId,
+        inventoryItemId: invItem._id,
+        type: "usage",
+        referenceType: "kot",
+        quantity: -deductQty,
+        previousQuantity,
+        updatedQuantity,
+        referenceId: kot._id,
+        notes: `KOT preparation: ${kotItem.itemName || kotItem.menuItemId}`,
+        createdBy: userId,
+      });
+
+      const io = getIo();
+      if (io && updatedQuantity <= invItem.minimumStock) {
+        io.to(`branch:${tenant.branchId}`).emit("inventory:low-stock", {
+          itemId: invItem._id,
+          materialName: invItem.materialName,
+          stockQuantity: updatedQuantity,
+          minimumStock: invItem.minimumStock,
+          branchId: tenant.branchId,
+        });
+        notify(tenant.branchId, {
+          type: "low_stock",
+          title: "Low Stock Alert",
+          description: `${invItem.materialName} running low (${updatedQuantity} left)`,
+          meta: { itemId: invItem._id, materialName: invItem.materialName, stockQuantity: updatedQuantity },
+        });
+      }
+    }
+  }
+};
 
 const createKot = async ({ payload, tenant, user }) => {
   const bill = await billRepository.findOne({
@@ -86,6 +148,12 @@ const updateKotStatus = async ({ id, payload, tenant, user }) => {
   kot.updatedBy = user.id;
 
   kot.items = kot.items?.map((each) => ({ ...each, status: payload.status === "ready" ? "ready" : each.status }));
+
+  // Deduct stock ingredients once when chef starts preparation
+  if (payload.status === "preparing" && !kot.stockDeducted) {
+    await deductStockForKot({ kot, tenant, userId: user.id });
+    kot.stockDeducted = true;
+  }
 
   const updated = await kot.save();
 

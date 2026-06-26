@@ -23,6 +23,9 @@ const designationRoutes = require("../modules/designation/designation.routes");
 const reportsRoutes = require("../modules/reports/reports.routes");
 const dashboardRoutes = require("../modules/dashboard/dashboard.routes");
 const supplierRoutes = require("../modules/supplier/supplier.routes");
+const warehouseRoutes = require("../modules/warehouse/warehouse.routes");
+const stockTransferRoutes = require("../modules/stockTransfer/stockTransfer.routes");
+const wastageRoutes = require("../modules/wastage/wastage.routes");
 const router = express.Router();
 
 router.get("/health", (req, res) => {
@@ -53,5 +56,8 @@ router.use("/shifts", shiftRoutes);
 router.use("/designations", designationRoutes);
 router.use("/reports", reportsRoutes);
 router.use("/dashboard", dashboardRoutes);
+router.use("/warehouses", warehouseRoutes);
+router.use("/stock-transfers", stockTransferRoutes);
+router.use("/wastage", wastageRoutes);
 
 module.exports = router;
