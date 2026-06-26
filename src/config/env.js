@@ -8,7 +8,8 @@ const env = {
   appUrl: process.env.APP_URL || "http://localhost:5000",
   clientUrl: process.env.CLIENT_URL || "http://localhost:5173/", //"https://restaurant-qr-order-three.vercel.app",
   mongoUri:
-    process.env.MONGO_URI || "mongodb://127.0.0.1:27017/restaurant_saas",
+    process.env.MONGO_URI ||
+    "mongodb+srv://suryaks403_db_user:LPBPRZbMB5MNB9gW@cluster0.lz6pxf7.mongodb.net/?appName=Cluster0",
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET || "dev-access-secret",
     refreshSecret: process.env.JWT_REFRESH_SECRET || "dev-refresh-secret",
