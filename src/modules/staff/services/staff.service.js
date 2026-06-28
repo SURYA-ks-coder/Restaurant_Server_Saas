@@ -59,6 +59,7 @@ const createStaff = async ({ payload, tenant, user, file }) => {
     address: payload.address || null,
     profileImage: file ? file.location : (payload.profileImage || null),
     emergencyContact: payload.emergencyContact || null,
+    reportsTo: payload.reportsTo || null,
     status: payload.status,
     createdBy: user.id,
   });
@@ -103,6 +104,7 @@ const STAFF_POPULATE = [
   { path: "designationId", select: "designationName" },
   { path: "shiftId", select: "shiftName startTime endTime" },
   { path: "roleId", select: "roleName" },
+  { path: "reportsTo", select: "name email role designationId" },
 ];
 
 const STAFF_SELECT =
@@ -123,7 +125,7 @@ const getStaff = async ({ id, tenant }) => {
   return staff;
 };
 
-const listStaff = async ({ query, tenant }) => {
+const listStaff = async ({ query, tenant, user }) => {
   const { page, limit, skip } = parsePagination(query);
   const sort = parseSort(query, ["createdAt", "name", "email"]);
   const filter = {
@@ -136,6 +138,14 @@ const listStaff = async ({ query, tenant }) => {
   if (query.departmentId) filter.departmentId = query.departmentId;
   if (query.designationId) filter.designationId = query.designationId;
   if (query.shiftId) filter.shiftId = query.shiftId;
+
+  // Hierarchy scope: "subordinates" returns only staff who report to the logged-in user
+  if (query.viewScope === "subordinates") {
+    filter.reportsTo = user.id;
+  } else if (query.reportsTo) {
+    filter.reportsTo = query.reportsTo;
+  }
+
   if (query.search)
     filter.$or = [
       { name: { $regex: query.search, $options: "i" } },
@@ -154,6 +164,29 @@ const listStaff = async ({ query, tenant }) => {
     userRepository.model.countDocuments(filter),
   ]);
   return { items, meta: paginationMeta({ total, page, limit }) };
+};
+
+const getSubordinateTree = async ({ userId, tenant }) => {
+  const directReports = await userRepository.model
+    .find({
+      reportsTo: userId,
+      restaurantId: tenant.restaurantId,
+      isDeleted: false,
+    })
+    .select("_id name email role designationId reportsTo profileImage status")
+    .populate([
+      { path: "designationId", select: "designationName" },
+      { path: "roleId", select: "roleName" },
+    ])
+    .lean();
+
+  const tree = await Promise.all(
+    directReports.map(async (staff) => ({
+      ...staff,
+      subordinates: await getSubordinateTree({ userId: staff._id, tenant }),
+    }))
+  );
+  return tree;
 };
 
 const listStaffByRole = async ({ roleId, query, tenant }) => {
@@ -224,4 +257,5 @@ module.exports = {
   listStaff,
   listStaffByRole,
   assignRoleToStaff,
+  getSubordinateTree,
 };

@@ -40,6 +40,7 @@ const create = {
       phone: phone.allow("", null),
       relation: Joi.string().max(80).allow("", null),
     }).allow(null),
+    reportsTo: objectId.allow(null),
     status: Joi.string()
       .valid("active", "inactive", "blocked")
       .default("active"),
@@ -72,6 +73,7 @@ const update = {
       phone: phone.allow("", null),
       relation: Joi.string().max(80).allow("", null),
     }).allow(null),
+    reportsTo: objectId.allow(null),
     status: Joi.string().valid("active", "inactive", "blocked"),
   }).min(1),
 };
@@ -111,6 +113,8 @@ const list = {
     departmentId: objectId,
     designationId: objectId,
     shiftId: objectId,
+    reportsTo: objectId.allow(null),
+    viewScope: Joi.string().valid("all", "subordinates").default("all"),
     sortBy: Joi.string()
       .valid("createdAt", "name", "email")
       .default("createdAt"),

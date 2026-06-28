@@ -23,6 +23,11 @@ router.get(
   controller.list,
 );
 router.get(
+  "/my-team",
+  authorize("staff:read"),
+  controller.myTeam,
+);
+router.get(
   "/by-role/:roleId",
   authorize("staff:read"),
   validate(validator.listByRole),

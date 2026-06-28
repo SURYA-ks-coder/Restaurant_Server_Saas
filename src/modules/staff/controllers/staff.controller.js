@@ -45,8 +45,17 @@ const list = asyncHandler(async (req, res) => {
   const { items, meta } = await staffService.listStaff({
     query: req.query,
     tenant: req.tenant,
+    user: req.user,
   });
   sendSuccess(res, { message: "Staff fetched", data: items, meta });
+});
+
+const myTeam = asyncHandler(async (req, res) => {
+  const tree = await staffService.getSubordinateTree({
+    userId: req.user.id,
+    tenant: req.tenant,
+  });
+  sendSuccess(res, { message: "My team fetched", data: tree });
 });
 
 const listByRole = asyncHandler(async (req, res) => {
@@ -68,4 +77,4 @@ const assignRole = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "Role assigned to staff", data });
 });
 
-module.exports = { create, update, remove, get, list, listByRole, assignRole };
+module.exports = { create, update, remove, get, list, listByRole, assignRole, myTeam };

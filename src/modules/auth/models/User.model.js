@@ -62,6 +62,12 @@ const userSchema = new mongoose.Schema(
       ref: "Designation",
       default: null,
     },
+    reportsTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+      index: true,
+    },
     gender: { type: String, enum: ["male", "female", "other"], default: null },
     dateOfBirth: { type: Date, default: null },
     dateOfJoining: { type: Date, default: null },
