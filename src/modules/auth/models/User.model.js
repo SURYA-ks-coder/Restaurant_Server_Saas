@@ -23,7 +23,6 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: false,
       select: false,
-      default: "res123RE",
     },
     // role: {
     //   type: String,

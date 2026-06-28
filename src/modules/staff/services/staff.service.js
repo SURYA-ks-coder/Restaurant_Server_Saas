@@ -35,7 +35,7 @@ const createStaff = async ({ payload, tenant, user, file }) => {
     }
   }
 
-  const plainPassword = payload.password || "RE123A1!"; //Math.random().toString(36).slice(-10) + "A1!";
+  const plainPassword = payload.password || "Staff@123";
   const hashedPassword = await bcrypt.hash(plainPassword, 12);
 
   const staff = await userRepository.create({
