@@ -3,8 +3,106 @@ const Category = require("../modules/category/models/Category.model");
 const Subcategory = require("../modules/subcategory/models/Subcategory.model");
 const MenuItem = require("../modules/menuItem/models/MenuItem.model");
 
-// Menu IDs the default Staff role can access (from menuList.js)
-const STAFF_DEFAULT_MENUS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+// Menu IDs from menuList.js:
+// 1=Dashboard, 2=Sales, 3=POS Ordering, 4=Orders, 5=Billing,
+// 6=Restaurant, 7=Tables, 8=Kitchen KOT, 9=Menus, 10=QR Orders,
+// 11=Inventory & Finance, 12=Inventory, 13=Expenses,
+// 14=Administration, 15=Staff, 16=Reports, 17=Restaurant Profile,
+// 18=Settings, 19=Privileges
+
+const DEFAULT_ROLES = [
+  {
+    roleName: "Staff",
+    menus: [1, 3, 4, 5, 7, 8, 9, 10],
+    permissions: [
+      "pos:read",
+      "pos:create",
+      "kot:read",
+      "table:read",
+      "reservation:read",
+      "menu:read",
+      "category:read",
+      "subcategory:read",
+    ],
+  },
+  {
+    roleName: "Manager",
+    menus: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16],
+    permissions: [
+      "restaurant:read",
+      "branch:read",
+      "category:read",
+      "category:create",
+      "category:update",
+      "subcategory:read",
+      "subcategory:create",
+      "subcategory:update",
+      "menu:read",
+      "menu:create",
+      "menu:update",
+      "table:read",
+      "table:create",
+      "table:update",
+      "table:delete",
+      "reservation:read",
+      "reservation:create",
+      "reservation:update",
+      "reservation:delete",
+      "pos:read",
+      "pos:create",
+      "kot:read",
+      "kot:update",
+      "inventory:read",
+      "inventory:create",
+      "inventory:update",
+      "reports:read",
+      "staff:read",
+      "staff:create",
+      "staff:update",
+      "role:read",
+    ],
+  },
+  {
+    roleName: "Chef",
+    menus: [1, 4, 8, 9],
+    permissions: [
+      "kot:read",
+      "kot:update",
+      "menu:read",
+      "category:read",
+      "subcategory:read",
+      "inventory:read",
+    ],
+  },
+  {
+    roleName: "Server",
+    menus: [1, 3, 4, 7, 9, 10],
+    permissions: [
+      "pos:read",
+      "pos:create",
+      "table:read",
+      "reservation:read",
+      "menu:read",
+      "category:read",
+      "subcategory:read",
+      "kot:read",
+    ],
+  },
+  {
+    roleName: "Cashier",
+    menus: [1, 2, 3, 4, 5, 7, 9, 16],
+    permissions: [
+      "pos:read",
+      "pos:create",
+      "table:read",
+      "reservation:read",
+      "menu:read",
+      "category:read",
+      "subcategory:read",
+      "reports:read",
+    ],
+  },
+];
 
 const CATEGORY_SEEDS = [
   { categoryName: "Starters", displayOrder: 1 },
@@ -108,16 +206,21 @@ const MENU_ITEM_SEEDS = [
 ];
 
 const seedRestaurantDefaults = async ({ restaurantId, branchId, ownerId }) => {
-  // 1. Default Staff role
-  const existingRole = await Role.findOne({ restaurantId, roleName: "Staff" });
-  if (!existingRole) {
-    await Role.create({
-      restaurantId,
-      roleName: "Staff",
-      menus: STAFF_DEFAULT_MENUS,
-      permissions: [],
-      status: "active",
-    });
+  // 1. Seed all default roles (upsert by roleName)
+  const existingRoleNames = await Role.find({ restaurantId }).distinct("roleName");
+  const existingSet = new Set(existingRoleNames);
+
+  const rolesToCreate = DEFAULT_ROLES.filter((r) => !existingSet.has(r.roleName));
+  if (rolesToCreate.length > 0) {
+    await Role.insertMany(
+      rolesToCreate.map((r) => ({
+        restaurantId,
+        roleName: r.roleName,
+        menus: r.menus,
+        permissions: r.permissions,
+        status: "active",
+      })),
+    );
   }
 
   // Skip category/item seeding if already done for this branch
@@ -171,4 +274,4 @@ const seedRestaurantDefaults = async ({ restaurantId, branchId, ownerId }) => {
   await MenuItem.insertMany(menuItemDocs);
 };
 
-module.exports = { seedRestaurantDefaults };
+module.exports = { seedRestaurantDefaults, DEFAULT_ROLES };

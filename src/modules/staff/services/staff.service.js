@@ -19,13 +19,20 @@ const createStaff = async ({ payload, tenant, user, file }) => {
 
   // Auto-assign default Staff role if no roleId explicitly provided
   let roleId = payload.roleId || null;
+  let defaultPermissions = payload.permissions || [];
   if (!roleId) {
     const defaultRole = await roleRepository.findOne({
       restaurantId: tenant.restaurantId,
       roleName: "Staff",
       status: "active",
     });
-    if (defaultRole) roleId = defaultRole._id;
+    if (defaultRole) {
+      roleId = defaultRole._id;
+      // Inherit permissions from the Staff role when auto-assigning
+      if (!payload.permissions || payload.permissions.length === 0) {
+        defaultPermissions = defaultRole.permissions || [];
+      }
+    }
   }
 
   const plainPassword = payload.password || "RE123A1!"; //Math.random().toString(36).slice(-10) + "A1!";
@@ -44,7 +51,7 @@ const createStaff = async ({ payload, tenant, user, file }) => {
     departmentId: payload.departmentId || null,
     shiftId: payload.shiftId || null,
     designationId: payload.designationId || null,
-    permissions: payload.permissions || [],
+    permissions: defaultPermissions,
     employeeCode: payload.employeeCode || null,
     gender: payload.gender || null,
     dateOfBirth: payload.dateOfBirth || null,

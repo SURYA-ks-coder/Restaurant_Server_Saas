@@ -34,6 +34,8 @@ const userSchema = new mongoose.Schema(
         "cashier",
         "chef",
         "waiter",
+        "server",
+        "staff",
         "inventory_staff",
       ],
       default: "owner",

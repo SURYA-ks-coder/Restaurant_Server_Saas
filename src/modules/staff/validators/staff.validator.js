@@ -10,6 +10,8 @@ const staffRole = Joi.string().valid(
   "cashier",
   "chef",
   "waiter",
+  "server",
+  "staff",
   "inventory_staff",
 );
 
@@ -102,6 +104,8 @@ const list = {
       "cashier",
       "chef",
       "waiter",
+      "server",
+      "staff",
       "inventory_staff",
     ),
     departmentId: objectId,
