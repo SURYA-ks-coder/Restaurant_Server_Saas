@@ -7,16 +7,22 @@ const onboardingStepSchema = new mongoose.Schema(
     logo: { type: Boolean, default: false },
     branch: { type: Boolean, default: false },
     subscription: { type: Boolean, default: false },
-    domain: { type: Boolean, default: false }
+    domain: { type: Boolean, default: false },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const restaurantSchema = new mongoose.Schema(
   {
     restaurantName: { type: String, trim: true },
     name: { type: String, required: true, trim: true },
-    slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
     logo: String,
     ownerName: { type: String, trim: true },
     mobileNumber: { type: String, trim: true },
@@ -30,36 +36,54 @@ const restaurantSchema = new mongoose.Schema(
     pincode: { type: String, trim: true },
     currency: { type: String, trim: true, uppercase: true, default: "INR" },
     timezone: { type: String, trim: true, default: "Asia/Kolkata" },
-    subscriptionPlan: { type: mongoose.Schema.Types.ObjectId, ref: "SubscriptionPlan" },
+    subscriptionPlan: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SubscriptionPlan",
+    },
     subscriptionPlanName: { type: String, trim: true, default: "Free Trial" },
-    currentSubscriptionId: { type: mongoose.Schema.Types.ObjectId, ref: "RestaurantSubscription" },
+    currentSubscriptionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "RestaurantSubscription",
+    },
     trialStartDate: Date,
     trialEndDate: Date,
     status: {
       type: String,
       enum: ["trialing", "active", "inactive", "suspended", "expired"],
       default: "trialing",
-      index: true
+      index: true,
     },
     setupStatus: {
       type: String,
       enum: ["pending", "in_progress", "completed"],
       default: "pending",
-      index: true
+      index: true,
     },
     onboardingSteps: { type: onboardingStepSchema, default: () => ({}) },
-    customDomain: { type: String, lowercase: true, trim: true, unique: true, sparse: true },
-    subdomain: { type: String, lowercase: true, trim: true, unique: true, sparse: true },
+    customDomain: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
+    subdomain: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      unique: true,
+      sparse: true,
+    },
     domainStatus: {
       type: String,
       enum: ["not_configured", "pending", "verified", "failed"],
-      default: "not_configured"
+      default: "not_configured",
     },
     isDeleted: { type: Boolean, default: false, index: true },
     deletedAt: Date,
-    deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+    deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 restaurantSchema.index({ email: 1 });
