@@ -1,7 +1,7 @@
 const express = require("express");
 const controller = require("./controllers/subscription.controller");
 const validate = require("../../middleware/validate.middleware");
-const { authenticate, authorize } = require("../../middleware/auth.middleware");
+const { authenticate, authorize, requireProductOwner } = require("../../middleware/auth.middleware");
 const attachTenantScope = require("../../middleware/tenantScope.middleware");
 const validator = require("./validators/subscription.validator");
 
@@ -11,6 +11,7 @@ router.get("/list", validate(validator.listPlans), controller.listPlans);
 
 router.use(authenticate, attachTenantScope);
 
+// Restaurant Owner (roleLevel 2) and above can view and manage their own subscription
 router.get("/current", authorize("subscription:read"), controller.current);
 router.post(
   "/select-plan",
@@ -30,16 +31,18 @@ router.post(
   validate(validator.selectPlan),
   controller.selectPlan,
 );
-router.post("/expire", authorize("subscription:manage"), controller.expire);
+
+// Product Owner (roleLevel 1) only — platform-level subscription management
+router.post("/expire", requireProductOwner, controller.expire);
 router.post(
   "/plans",
-  authorize("subscription:manage"),
+  requireProductOwner,
   validate(validator.createPlan),
   controller.createPlan,
 );
 router.patch(
   "/plans/:id",
-  authorize("subscription:manage"),
+  requireProductOwner,
   validate(validator.updatePlan),
   controller.updatePlan,
 );

@@ -16,6 +16,7 @@ const publicUser = (user, roleData = {}) => ({
   defaultBranchId: user.defaultBranchId,
   roleId: user.roleId ?? null,
   roleName: roleData.roleName || null,
+  userType: user.userType || "staff",
   permissions: user.permissions,
   status: user.status,
   permissionIds: roleData.menus || [],

@@ -55,8 +55,9 @@ const seed = async () => {
       email:           ADMIN_EMAIL,
       password:        ADMIN_PASSWORD,   // hashed by User pre-save hook
       role:            "super_admin",
+      userType:        "platform_owner",
       status:          "active",
-      permissions:     [],               // super_admin bypasses permission checks
+      permissions:     [],               // roleLevel 1 bypasses permission checks
     });
     console.log("✓ Super admin created");
     console.log(`  Email    : ${ADMIN_EMAIL}`);

@@ -192,6 +192,7 @@ const registerRestaurant = async ({ payload, file }) => {
     phone: payload.mobileNumber,
     password: payload.password,
     role: "owner",
+    userType: "restaurant_owner",
     permissions: OWNER_PERMISSIONS,
     status: "active",
   });

@@ -11,6 +11,7 @@ const signAccessToken = (user, roleName) =>
       branchIds: (user.branchIds || []).map((id) => id.toString()),
       roleId: user.roleId?.toString() || null,
       roleName: roleName || null,
+      userType: user.userType || "staff",
       permissions: user.permissions || [],
     },
     env.jwt.accessSecret,
