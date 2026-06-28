@@ -14,8 +14,8 @@ const publicUser = (user, roleData = {}) => ({
   restaurantId: user.restaurantId,
   branchIds: user.branchIds,
   defaultBranchId: user.defaultBranchId,
-  role: user.role,
   roleId: user.roleId ?? null,
+  roleName: roleData.roleName || null,
   permissions: user.permissions,
   status: user.status,
   permissionIds: roleData.menus || [],
@@ -26,12 +26,12 @@ const resolveMenus = async (user) => {
   if (!user.roleId) return {};
   const role = await roleRepository.findOne({ _id: user.roleId, status: "active" });
   if (!role) return {};
-  return { menus: role.menus || [] };
+  return { menus: role.menus || [], roleName: role.roleName || null };
 };
 
-const issueTokens = async (user) => {
+const issueTokens = async (user, roleName) => {
   const tokenVersion = (user.tokenVersion || 0) + 1;
-  const accessToken = signAccessToken(user);
+  const accessToken = signAccessToken(user, roleName);
   const refreshToken = signRefreshToken(user, tokenVersion);
   user.refreshTokenHash = hashToken(refreshToken);
   user.tokenVersion = tokenVersion;
@@ -50,7 +50,8 @@ const register = async (payload) => {
 
   const user = await userRepository.create(payload);
   const authUser = await userRepository.findByEmailForAuth(user.restaurantId, user.email);
-  const [tokens, roleData] = await Promise.all([issueTokens(authUser), resolveMenus(authUser)]);
+  const roleData = await resolveMenus(authUser);
+  const tokens = await issueTokens(authUser, roleData.roleName);
   return { user: publicUser(authUser, roleData), tokens };
 };
 
@@ -60,11 +61,14 @@ const login = async ({ restaurantId, email, password, branchId }) => {
     throw new AppError("Invalid email or password", httpStatus.UNAUTHORIZED);
   }
   if (user.status !== "active") throw new AppError("Account is not active", httpStatus.FORBIDDEN);
-  if (branchId && !user.branchIds.map(String).includes(String(branchId)) && user.role !== "owner") {
+
+  const roleData = await resolveMenus(user);
+  const isOwner = (roleData.roleName || "").toLowerCase() === "owner";
+  if (branchId && !user.branchIds.map(String).includes(String(branchId)) && !isOwner) {
     throw new AppError("User does not have access to selected branch", httpStatus.FORBIDDEN);
   }
 
-  const [tokens, roleData] = await Promise.all([issueTokens(user), resolveMenus(user)]);
+  const tokens = await issueTokens(user, roleData.roleName);
   return { user: publicUser(user, roleData), tokens };
 };
 
@@ -75,7 +79,8 @@ const refresh = async (refreshToken) => {
   if (!user || user.refreshTokenHash !== hashToken(refreshToken) || user.tokenVersion !== payload.tokenVersion) {
     throw new AppError("Invalid refresh token", httpStatus.UNAUTHORIZED);
   }
-  const [tokens, roleData] = await Promise.all([issueTokens(user), resolveMenus(user)]);
+  const roleData = await resolveMenus(user);
+  const tokens = await issueTokens(user, roleData.roleName);
   return { user: publicUser(user, roleData), tokens };
 };
 

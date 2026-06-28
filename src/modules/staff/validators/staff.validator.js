@@ -110,6 +110,7 @@ const list = {
     //   "staff",
     //   "inventory_staff",
     // ),
+    roleId: objectId,
     departmentId: objectId,
     designationId: objectId,
     shiftId: objectId,

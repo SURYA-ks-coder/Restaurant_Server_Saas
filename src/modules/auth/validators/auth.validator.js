@@ -12,9 +12,9 @@ const register = {
     email: Joi.string().email().required(),
     phone: Joi.string().max(20).allow("", null),
     password: password.required(),
-    role: Joi.string()
-      .valid("owner", "manager", "cashier", "chef", "waiter", "inventory_staff")
-      .default("owner"),
+    // role: Joi.string()
+    //   .valid("owner", "manager", "cashier", "chef", "waiter", "inventory_staff")
+    //   .default("owner"),
     permissions: Joi.array().items(Joi.string()).default([]),
   }),
 };

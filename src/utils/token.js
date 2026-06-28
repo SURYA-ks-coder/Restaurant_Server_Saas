@@ -2,14 +2,15 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const env = require("../config/env");
 
-const signAccessToken = (user) =>
+const signAccessToken = (user, roleName) =>
   jwt.sign(
     {
       sub: user._id.toString(),
       tenantId: user.restaurantId?.toString(),
       restaurantId: user.restaurantId?.toString(),
       branchIds: (user.branchIds || []).map((id) => id.toString()),
-      role: user.role,
+      roleId: user.roleId?.toString() || null,
+      roleName: roleName || null,
       permissions: user.permissions || [],
     },
     env.jwt.accessSecret,

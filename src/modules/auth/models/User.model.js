@@ -27,18 +27,8 @@ const userSchema = new mongoose.Schema(
     },
     // role: {
     //   type: String,
-    //   enum: [
-    //     "super_admin",
-    //     "owner",
-    //     "manager",
-    //     "cashier",
-    //     "chef",
-    //     "waiter",
-    //     "server",
-    //     "staff",
-    //     "inventory_staff",
-    //   ],
-    //   default: "owner",
+    //   enum: ["super_admin", "owner", "staff"],
+    //   default: "staff",
     // },
     roleId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -102,8 +92,6 @@ userSchema.index({ restaurantId: 1, email: 1 }, { unique: true });
 userSchema.plugin(tenantScopePlugin);
 
 userSchema.pre("save", async function hashPassword(next) {
-  if (this.name && !this.ownerName && this.role === "owner")
-    this.ownerName = this.name;
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, env.bcryptSaltRounds);
   this.passwordChangedAt = new Date();

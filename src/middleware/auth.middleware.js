@@ -25,9 +25,10 @@ const authenticate = async (req, res, next) => {
       restaurantId: user.restaurantId,
       branchIds: user.branchIds,
       activeBranchId: req.headers["x-branch-id"] || user.defaultBranchId,
-      role: user.role,
+      roleId: user.roleId || null,
+      roleName: payload.roleName || payload.role || null,
       permissions: user.permissions,
-      email: user.email
+      email: user.email,
     };
     next();
   } catch (error) {
@@ -37,7 +38,8 @@ const authenticate = async (req, res, next) => {
 
 const authorize = (...requiredPermissions) => (req, res, next) => {
   if (!req.user) return next(new AppError("Authentication required", 401));
-  if (req.user.role === "owner" || req.user.role === "super_admin") return next();
+  const roleName = (req.user.roleName || "").toLowerCase();
+  if (roleName === "owner" || roleName === "super admin" || roleName === "super_admin") return next();
   const permissions = req.user.permissions || [];
   const allowed = requiredPermissions.every((permission) => permissions.includes(permission));
   if (!allowed) return next(new AppError("You do not have permission to access this resource", 403));
@@ -48,7 +50,9 @@ const enforceBranchAccess = async (req, res, next) => {
   try {
     if (!req.user?.activeBranchId) return next(new AppError("Branch context is required", 400));
     const allowed = (req.user.branchIds || []).map((id) => id.toString());
-    if (req.user.role !== "owner" && !allowed.includes(req.user.activeBranchId.toString())) {
+    const rn = (req.user.roleName || "").toLowerCase();
+    const isOwner = rn === "owner" || rn === "super_admin" || rn === "super admin";
+    if (!isOwner && !allowed.includes(req.user.activeBranchId.toString())) {
       return next(new AppError("You do not have access to this branch", 403));
     }
     const branch = await Branch.findOne({

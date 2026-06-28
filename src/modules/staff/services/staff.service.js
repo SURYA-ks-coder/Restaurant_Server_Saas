@@ -46,7 +46,7 @@ const createStaff = async ({ payload, tenant, user, file }) => {
     email: payload.email,
     phone: payload.phone,
     password: hashedPassword,
-    role: payload.role,
+    // role: "staff",
     roleId,
     departmentId: payload.departmentId || null,
     shiftId: payload.shiftId || null,
@@ -57,7 +57,7 @@ const createStaff = async ({ payload, tenant, user, file }) => {
     dateOfBirth: payload.dateOfBirth || null,
     dateOfJoining: payload.dateOfJoining || null,
     address: payload.address || null,
-    profileImage: file ? file.location : (payload.profileImage || null),
+    profileImage: file ? file.location : payload.profileImage || null,
     emergencyContact: payload.emergencyContact || null,
     reportsTo: payload.reportsTo || null,
     status: payload.status,
@@ -134,7 +134,7 @@ const listStaff = async ({ query, tenant, user }) => {
     isDeleted: false,
   };
   if (query.status) filter.status = query.status;
-  if (query.role) filter.role = query.role;
+  if (query.roleId) filter.roleId = query.roleId;
   if (query.departmentId) filter.departmentId = query.departmentId;
   if (query.designationId) filter.designationId = query.designationId;
   if (query.shiftId) filter.shiftId = query.shiftId;
@@ -184,7 +184,7 @@ const getSubordinateTree = async ({ userId, tenant }) => {
     directReports.map(async (staff) => ({
       ...staff,
       subordinates: await getSubordinateTree({ userId: staff._id, tenant }),
-    }))
+    })),
   );
   return tree;
 };

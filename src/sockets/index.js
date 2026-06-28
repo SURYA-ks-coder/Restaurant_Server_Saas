@@ -7,7 +7,8 @@ let ioInstance = null;
 
 const canAccessBranch = (socket, branchId) => {
   const branchIds = (socket.user.branchIds || []).map(String);
-  return socket.user.role === "owner" || branchIds.includes(String(branchId));
+  const isOwner = (socket.user.roleName || "").toLowerCase() === "owner";
+  return isOwner || branchIds.includes(String(branchId));
 };
 
 const initSockets = (httpServer) => {
