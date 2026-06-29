@@ -110,6 +110,20 @@ const STAFF_POPULATE = [
 const STAFF_SELECT =
   "-password -refreshTokenHash -tokenVersion -passwordResetTokenHash -passwordResetExpiresAt";
 
+const getAllSubordinateIds = async (userId, restaurantId) => {
+  const directReports = await userRepository.model
+    .find({ reportsTo: userId, restaurantId, isDeleted: false })
+    .select("_id")
+    .lean();
+
+  const ids = directReports.map((s) => s._id);
+  const nested = await Promise.all(
+    directReports.map((s) => getAllSubordinateIds(s._id, restaurantId)),
+  );
+  nested.forEach((arr) => ids.push(...arr));
+  return ids;
+};
+
 const getStaff = async ({ id, tenant }) => {
   const staff = await userRepository.model
     .findOne({
@@ -139,9 +153,11 @@ const listStaff = async ({ query, tenant, user }) => {
   if (query.designationId) filter.designationId = query.designationId;
   if (query.shiftId) filter.shiftId = query.shiftId;
 
-  // Hierarchy scope: "subordinates" returns only staff who report to the logged-in user
+  // Hierarchy scope: "subordinates" returns all staff in the logged-in user's subtree
+  // (direct reports + all staff nested below them)
   if (query.viewScope === "subordinates") {
-    filter.reportsTo = user.id;
+    const subIds = await getAllSubordinateIds(user.id, tenant.restaurantId);
+    filter._id = { $in: subIds };
   } else if (query.reportsTo) {
     filter.reportsTo = query.reportsTo;
   }
@@ -258,4 +274,5 @@ module.exports = {
   listStaffByRole,
   assignRoleToStaff,
   getSubordinateTree,
+  getAllSubordinateIds,
 };
