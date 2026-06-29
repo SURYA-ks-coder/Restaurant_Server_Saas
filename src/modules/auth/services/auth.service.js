@@ -64,7 +64,10 @@ const login = async ({ restaurantId, email, password, branchId }) => {
   if (user.status !== "active") throw new AppError("Account is not active", httpStatus.FORBIDDEN);
 
   const roleData = await resolveMenus(user);
-  const isOwner = (roleData.roleName || "").toLowerCase() === "owner";
+  const isOwner =
+    (roleData.roleName || "").toLowerCase() === "owner" ||
+    user.userType === "restaurant_owner" ||
+    user.userType === "platform_owner";
   if (branchId && !user.branchIds.map(String).includes(String(branchId)) && !isOwner) {
     throw new AppError("User does not have access to selected branch", httpStatus.FORBIDDEN);
   }

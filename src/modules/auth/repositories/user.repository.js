@@ -7,8 +7,9 @@ class UserRepository extends BaseRepository {
   }
 
   findByEmailForAuth(restaurantId, email) {
-    return User.findOne({ email, isDeleted: false }).select(
-      //restaurantId
+    const filter = { email, isDeleted: false };
+    if (restaurantId) filter.restaurantId = restaurantId;
+    return User.findOne(filter).select(
       "+password +refreshTokenHash +tokenVersion +passwordResetTokenHash +passwordResetExpiresAt",
     );
   }

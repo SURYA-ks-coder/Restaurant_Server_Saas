@@ -36,7 +36,6 @@ const createStaff = async ({ payload, tenant, user, file }) => {
   }
 
   const plainPassword = payload.password || "Staff@123";
-  const hashedPassword = await bcrypt.hash(plainPassword, 12);
 
   const staff = await userRepository.create({
     restaurantId: tenant.restaurantId,
@@ -45,7 +44,7 @@ const createStaff = async ({ payload, tenant, user, file }) => {
     name: payload.name,
     email: payload.email,
     phone: payload.phone,
-    password: hashedPassword,
+    password: plainPassword,
     // role: "staff",
     roleId,
     departmentId: payload.departmentId || null,
