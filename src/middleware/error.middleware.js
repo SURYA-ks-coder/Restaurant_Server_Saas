@@ -11,8 +11,16 @@ const resolveStatusCode = (err) => {
   if (err.statusCode) return err.statusCode;
   if (err.name === "ValidationError") return 422;
   if (err.name === "CastError") return 400;
+  if (err.name === "MulterError") return 400;
   if (err.code === 11000) return 409;
   return 500;
+};
+
+const resolveMulterMessage = (err) => {
+  if (err.code === "LIMIT_UNEXPECTED_FILE")
+    return `Unexpected file field "${err.field}"`;
+  if (err.code === "LIMIT_FILE_SIZE") return "Uploaded file is too large";
+  return err.message;
 };
 
 const resolveDuplicateKeyMessage = (err) => {
@@ -27,6 +35,8 @@ const errorHandler = (err, req, res, next) => {
     message = "Internal server error";
   } else if (err.code === 11000) {
     message = resolveDuplicateKeyMessage(err);
+  } else if (err.name === "MulterError") {
+    message = resolveMulterMessage(err);
   } else {
     message = err.message;
   }
