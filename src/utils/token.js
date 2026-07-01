@@ -37,9 +37,19 @@ const createPasswordResetToken = () => {
   };
 };
 
+const signQrToken = ({ restaurantId, branchId, tableId, tableNumber }) =>
+  jwt.sign(
+    { restaurantId: String(restaurantId), branchId: String(branchId), tableId: String(tableId), tableNumber },
+    env.jwt.qrSecret,
+  );
+
+const verifyQrToken = (token) => jwt.verify(token, env.jwt.qrSecret);
+
 module.exports = {
   signAccessToken,
   signRefreshToken,
   hashToken,
   createPasswordResetToken,
+  signQrToken,
+  verifyQrToken,
 };

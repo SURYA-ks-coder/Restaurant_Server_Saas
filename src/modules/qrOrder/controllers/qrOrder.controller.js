@@ -2,6 +2,7 @@ const httpStatus = require("http-status");
 const asyncHandler = require("../../../utils/asyncHandler");
 const { sendSuccess } = require("../../../helpers/apiResponse");
 const qrOrderService = require("../services/qrOrder.service");
+const { verifyQrToken } = require("../../../utils/token");
 
 const create = asyncHandler(async (req, res) => {
   const data = await qrOrderService.createQrOrder({
@@ -70,6 +71,19 @@ const list = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "QR orders fetched", data: items, meta });
 });
 
+const resolveToken = asyncHandler(async (req, res) => {
+  const { token } = req.query;
+  if (!token) {
+    return res.status(httpStatus.BAD_REQUEST).json({ success: false, message: "token is required" });
+  }
+  try {
+    const { restaurantId, branchId, tableId, tableNumber } = verifyQrToken(token);
+    sendSuccess(res, { message: "QR token resolved", data: { restaurantId, branchId, tableId, tableNumber } });
+  } catch {
+    res.status(httpStatus.UNAUTHORIZED).json({ success: false, message: "Invalid or tampered QR code" });
+  }
+});
+
 module.exports = {
   create,
   updateCart,
@@ -78,4 +92,5 @@ module.exports = {
   cancelOrder,
   get,
   list,
+  resolveToken,
 };

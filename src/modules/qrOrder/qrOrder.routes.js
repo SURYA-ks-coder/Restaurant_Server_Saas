@@ -10,6 +10,10 @@ const attachTenantScope = require("../../middleware/tenantScope.middleware");
 const validator = require("./validators/qrOrder.validator");
 
 const router = express.Router();
+
+// Public — verifies the signed QR token and returns the table context
+router.get("/resolve", controller.resolveToken);
+
 router.use(authenticate, enforceBranchAccess, attachTenantScope);
 
 router.get(

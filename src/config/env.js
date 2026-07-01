@@ -15,6 +15,7 @@ const env = {
     refreshSecret: process.env.JWT_REFRESH_SECRET || "dev-refresh-secret",
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
+    qrSecret: process.env.JWT_QR_SECRET || "dev-qr-secret",
   },
   bcryptSaltRounds: Number(process.env.BCRYPT_SALT_ROUNDS || 12),
   maxFileSizeMb: Number(process.env.MAX_FILE_SIZE_MB || 5),

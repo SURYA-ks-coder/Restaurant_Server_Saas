@@ -2,6 +2,7 @@ const httpStatus = require("http-status");
 const AppError = require("../../../utils/AppError");
 const QRCode = require("qrcode");
 const env = require("../../../config/env");
+const { signQrToken } = require("../../../utils/token");
 const {
   parsePagination,
   parseSort,
@@ -15,12 +16,14 @@ const { getIo } = require("../../../sockets");
 const STATUSES = ["available", "occupied", "reserved", "cleaning"];
 
 const buildTableOrderUrl = ({ table, tenant }) => {
+  const token = signQrToken({
+    restaurantId: tenant.restaurantId,
+    branchId: tenant.branchId,
+    tableId: table._id,
+    tableNumber: table.tableNumber,
+  });
   const orderUrl = new URL("/qr-order", env.clientUrl);
-  orderUrl.searchParams.set("restaurantId", String(tenant.restaurantId));
-  orderUrl.searchParams.set("branchId", String(tenant.branchId));
-  orderUrl.searchParams.set("tableId", String(table._id));
-  orderUrl.searchParams.set("tableNumber", table.tableNumber);
-
+  orderUrl.searchParams.set("token", token);
   return orderUrl.toString();
 };
 
