@@ -7,10 +7,12 @@ const env = require("../config/env");
 const AppError = require("../utils/AppError");
 
 const s3 = new S3Client({
-  region: env.aws.region,
+  region: "auto",
+  endpoint: `https://${env.r2.accountId}.r2.cloudflarestorage.com`,
+  forcePathStyle: true,
   credentials: {
-    accessKeyId: env.aws.accessKeyId,
-    secretAccessKey: env.aws.secretAccessKey,
+    accessKeyId: env.r2.accessKeyId,
+    secretAccessKey: env.r2.secretAccessKey,
   },
 });
 
@@ -20,25 +22,41 @@ const imageFileFilter = (req, file, cb) => {
   return cb(null, true);
 };
 
-// Factory: returns a multer instance that uploads to the given S3 folder.
-// file.location on the request object will contain the full public S3 URL.
+// R2's S3-API endpoint isn't the public one, so multer-s3's auto-generated
+// file.location is wrong; rebuild it from the bucket's public URL instead.
+const setPublicLocation = (req, res, next) => {
+  const files = req.file ? [req.file] : Object.values(req.files || {}).flat();
+  files.forEach((file) => {
+    file.location = `${env.r2.publicUrl.replace(/\/$/, "")}/${file.key}`;
+  });
+  next();
+};
+
+// Factory: returns an object exposing single/array/fields like multer, but
+// each also rewrites file.location to the public R2 URL after upload.
 const createUpload = (folder) => {
   const storage = multerS3({
     s3,
-    bucket: env.aws.s3Bucket,
+    bucket: env.r2.bucket,
     contentType: multerS3.AUTO_CONTENT_TYPE,
-    // Bucket must allow public read via bucket policy (not per-object ACL).
+    // Bucket must have public access enabled (R2.dev URL or custom domain).
     key: (req, file, cb) => {
       const ext = path.extname(file.originalname).toLowerCase();
       cb(null, `${folder}/${Date.now()}-${uuid()}${ext}`);
     },
   });
 
-  return multer({
+  const upload = multer({
     storage,
     fileFilter: imageFileFilter,
     limits: { fileSize: env.maxFileSizeMb * 1024 * 1024 },
   });
+
+  return {
+    single: (field) => [upload.single(field), setPublicLocation],
+    array: (field, maxCount) => [upload.array(field, maxCount), setPublicLocation],
+    fields: (fieldsSpec) => [upload.fields(fieldsSpec), setPublicLocation],
+  };
 };
 
 const menuItemUpload = createUpload("menu-items");

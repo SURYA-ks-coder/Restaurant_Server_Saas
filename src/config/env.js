@@ -23,11 +23,12 @@ const env = {
     windowMinutes: Number(process.env.RATE_LIMIT_WINDOW_MINUTES || 15),
     max: Number(process.env.RATE_LIMIT_MAX || 300),
   },
-  aws: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
-    region: process.env.AWS_REGION || "ap-south-1",
-    s3Bucket: process.env.AWS_S3_BUCKET_NAME || "",
+  r2: {
+    accountId: process.env.R2_ACCOUNT_ID || "",
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
+    bucket: process.env.R2_BUCKET_NAME || "",
+    publicUrl: process.env.R2_PUBLIC_URL || "",
   },
 };
 
