@@ -83,6 +83,7 @@ const hourlyBody = {
 const branchOnlyBody = {
   body: Joi.object({
     branchId: objectId,
+    export: Joi.string().valid("csv", "xlsx", "pdf"),
   }),
 };
 
