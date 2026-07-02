@@ -21,7 +21,7 @@ const reportQuery = {
     limit: Joi.number().integer().min(1).max(200).default(20),
     sortBy: Joi.string(),
     sortOrder: Joi.string().valid("asc", "desc").default("desc"),
-    export: Joi.string().valid("csv"),
+    export: Joi.string().valid("csv", "xlsx", "pdf"),
   }),
 };
 
@@ -32,7 +32,7 @@ const itemsQuery = {
     branchId: objectId,
     page: Joi.number().integer().min(1).default(1),
     limit: Joi.number().integer().min(1).max(200).default(20),
-    export: Joi.string().valid("csv"),
+    export: Joi.string().valid("csv", "xlsx", "pdf"),
   }),
 };
 
@@ -47,7 +47,7 @@ const expensesQuery = {
     limit: Joi.number().integer().min(1).max(200).default(20),
     sortBy: Joi.string(),
     sortOrder: Joi.string().valid("asc", "desc").default("desc"),
-    export: Joi.string().valid("csv"),
+    export: Joi.string().valid("csv", "xlsx", "pdf"),
   }),
 };
 
@@ -59,7 +59,7 @@ const _baseBody = {
   endDate: Joi.date().iso(),
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(500).default(20),
-  export: Joi.string().valid("csv"),
+  export: Joi.string().valid("csv", "xlsx", "pdf"),
 };
 
 const reportBody = {
@@ -76,6 +76,7 @@ const hourlyBody = {
     date: Joi.date().iso(),
     startDate: Joi.date().iso(),
     endDate: Joi.date().iso(),
+    export: Joi.string().valid("csv", "xlsx", "pdf"),
   }),
 };
 

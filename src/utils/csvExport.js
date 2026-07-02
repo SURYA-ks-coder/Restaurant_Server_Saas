@@ -13,4 +13,9 @@ const toCSV = (rows) => {
   ].join("\n");
 };
 
-module.exports = { toCSV };
+const toSectionsCSV = (sections) =>
+  sections
+    .map((section) => `## ${section.title}\n${toCSV(section.rows) || "(no data)"}`)
+    .join("\n\n");
+
+module.exports = { toCSV, toSectionsCSV };
