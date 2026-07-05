@@ -22,7 +22,10 @@ const buildTableOrderUrl = ({ table, tenant }) => {
     tableId: table._id,
     tableNumber: table.tableNumber,
   });
-  const orderUrl = new URL("/qr-order", env.clientUrl);
+  const orderUrl = new URL(
+    "/qr-order",
+    "https://my-app-peach-omega-42.vercel.app/",
+  ); //env.clientUrl
   orderUrl.searchParams.set("token", token);
   return orderUrl.toString();
 };
