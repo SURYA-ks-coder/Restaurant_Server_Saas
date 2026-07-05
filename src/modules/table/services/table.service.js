@@ -24,7 +24,7 @@ const buildTableOrderUrl = ({ table, tenant }) => {
   });
   const orderUrl = new URL(
     "/qr-order",
-    "https://my-app-peach-omega-42.vercel.app/",
+    "https://my-app-livid-ten-32.vercel.app/",
   ); //env.clientUrl
   orderUrl.searchParams.set("token", token);
   return orderUrl.toString();
