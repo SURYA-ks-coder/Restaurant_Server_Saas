@@ -11,13 +11,17 @@ const {
   requestLogger,
 } = require("./middleware/requestLogger.middleware");
 const { notFound, errorHandler } = require("./middleware/error.middleware");
+const { isOriginAllowed } = require("./config/cors");
 
 const app = express();
 
 app.use(helmet());
 app.use(
   cors({
-    origin: "*",
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   }),
 );

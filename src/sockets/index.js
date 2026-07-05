@@ -2,6 +2,7 @@ const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const env = require("../config/env");
 const logger = require("../config/logger");
+const { allowedOrigins } = require("../config/cors");
 
 let ioInstance = null;
 
@@ -14,12 +15,7 @@ const canAccessBranch = (socket, branchId) => {
 const initSockets = (httpServer) => {
   const io = new Server(httpServer, {
     cors: {
-      origin: [
-        env.clientUrl,
-        "http://localhost:3000",
-        "http://localhost:3001/",
-        "http://localhost:5173/",
-      ],
+      origin: allowedOrigins,
       credentials: true,
     },
   });
