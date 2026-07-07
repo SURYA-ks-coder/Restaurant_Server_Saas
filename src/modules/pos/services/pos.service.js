@@ -13,6 +13,7 @@ const {
 } = require("../../../helpers/queryBuilder");
 const { getIo } = require("../../../sockets");
 const { notify, checkSalesMilestone } = require("../../../sockets/notify");
+const printService = require("../../print/services/print.service");
 const kotRepository = require("../../kot/repositories/kot.repository");
 const tableRepository = require("../../table/repositories/table.repository");
 const { updateTableStatus } = require("../../table/services/table.service");
@@ -223,6 +224,15 @@ const createBill = async ({ payload, tenant, user }) => {
         : `${payload.orderType} · ${payload.items.length} items`,
       meta: { billId: bill._id, orderType: payload.orderType },
     });
+
+    if (payload.tableId) {
+      const kot = await kotRepository.findOne({ billId: bill._id });
+      if (kot) {
+        printService.printKot({ kotId: kot._id, tenant }).catch((err) => {
+          console.error("Error printing KOT:", err.message);
+        });
+      }
+    }
 
     return bill;
   } catch (error) {
@@ -655,6 +665,10 @@ const recordPayment = async ({ id, payload, tenant, user }) => {
         ? `Table ${updatedBill.tableName}`
         : updatedBill.orderType,
       meta: { billId: updatedBill._id },
+    });
+
+    printService.printBill({ billId: updatedBill._id, tenant }).catch((err) => {
+      console.error("Error printing bill:", err.message);
     });
 
     // Sales milestone check — compare today's revenue before and after this payment

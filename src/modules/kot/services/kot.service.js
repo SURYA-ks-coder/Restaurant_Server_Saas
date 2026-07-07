@@ -12,6 +12,7 @@ const inventoryTransactionRepository = require("../../inventory/repositories/inv
 const Recipe = require("../../inventory/models/Recipe.model");
 const { getIo } = require("../../../sockets");
 const { notify } = require("../../../sockets/notify");
+const printService = require("../../print/services/print.service");
 
 // Deduct ingredients from stock for all items in a KOT based on Recipes.
 // Non-blocking: logs warnings for missing recipes or insufficient stock.
@@ -100,6 +101,10 @@ const createKot = async ({ payload, tenant, user }) => {
     title: "New KOT",
     description: `${kot.items?.length || 0} items · ${kot.kitchenSection}`,
     meta: { kotId: kot._id, billId: payload.billId },
+  });
+
+  printService.printKot({ kotId: kot._id, tenant }).catch((err) => {
+    console.error("Error printing KOT:", err.message);
   });
 
   return kot;

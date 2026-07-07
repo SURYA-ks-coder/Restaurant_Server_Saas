@@ -3,6 +3,7 @@ const uuid = require("uuid");
 const QrOrderRepository = require("../repositories/qrOrder.repository");
 const AppError = require("../../../utils/AppError");
 const { getIo } = require("../../../sockets");
+const printService = require("../../print/services/print.service");
 
 const calculateTotals = ({ items, taxRate = 0, discount = 0 }) => {
   const subTotal = items.reduce((total, item) => total + item.total, 0);
@@ -123,6 +124,11 @@ const placeQrOrder = async ({ id, tenant }) => {
   if (io) {
     io.emit("qrOrder:placed", updated);
   }
+
+  printService.printQrOrder({ qrOrderId: id, tenant }).catch((err) => {
+    console.error("Error printing QR order slip:", err.message);
+  });
+
   return updated;
 };
 

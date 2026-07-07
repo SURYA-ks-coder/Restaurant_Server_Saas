@@ -70,6 +70,8 @@ const DEFAULT_ROLES = [
       "staff:create",
       "staff:update",
       "role:read",
+      "print:read",
+      "print:manage",
     ],
   },
   {
@@ -110,6 +112,7 @@ const DEFAULT_ROLES = [
       "category:read",
       "subcategory:read",
       "reports:read",
+      "print:read",
     ],
   },
 ];
