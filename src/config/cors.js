@@ -3,11 +3,11 @@ const env = require("./env");
 const normalize = (url) => (url || "").replace(/\/$/, "");
 
 const allowedOrigins = [
-  env.clientUrl,
-  "http://localhost:3000",
-  "http://localhost:5173",
+  "http://localhost:3000/",
+  "http://localhost:5173/",
   "https://restaurant-ui-saas-ruddy.vercel.app/",
   "https://my-app-livid-ten-32.vercel.app/",
+  env.clientUrl,
 ]
   .filter(Boolean)
   .map(normalize);
