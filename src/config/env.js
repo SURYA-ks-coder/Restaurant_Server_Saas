@@ -6,7 +6,8 @@ const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   port: Number(process.env.PORT || 5000),
   appUrl: process.env.APP_URL || "http://localhost:5000",
-  clientUrl: process.env.CLIENT_URL || "http://localhost:5173/", //"https://restaurant-qr-order-three.vercel.app",
+  clientUrl:
+    process.env.CLIENT_URL || "https://restaurant-qr-order-three.vercel.app", //"http://localhost:5173/",
   mongoUri:
     process.env.MONGO_URI ||
     "mongodb+srv://suryaks403_db_user:LPBPRZbMB5MNB9gW@cluster0.lz6pxf7.mongodb.net/?appName=Cluster0",
