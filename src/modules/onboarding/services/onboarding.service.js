@@ -120,7 +120,7 @@ const publicRestaurant = (restaurant) => ({
 
 const registerRestaurant = async ({ payload, file }) => {
   const emailExists = await User.exists({
-    email: payload.email,
+    email: payload.adminEmail,
     isDeleted: false,
   });
   if (emailExists)
@@ -188,7 +188,7 @@ const registerRestaurant = async ({ payload, file }) => {
     defaultBranchId: branch._id,
     name: payload.ownerName,
     ownerName: payload.ownerName,
-    email: payload.email,
+    email: payload.adminEmail,
     phone: payload.mobileNumber,
     password: payload.password,
     role: "owner",
