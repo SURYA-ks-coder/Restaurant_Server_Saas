@@ -51,29 +51,22 @@ const issueTokens = async (user, roleName) => {
 
 const register = async (payload) => {
   const exists = await userRepository.findOne({
-    restaurantId: payload.restaurantId,
-    email: payload.email,
+    email: String(payload.email || "").toLowerCase().trim(),
     isDeleted: false,
   });
   if (exists)
-    throw new AppError(
-      "Email already registered for this restaurant",
-      httpStatus.CONFLICT,
-    );
+    throw new AppError("Email is already registered", httpStatus.CONFLICT);
 
   const user = await userRepository.create(payload);
-  const authUser = await userRepository.findByEmailForAuth(
-    user.restaurantId,
-    user.email,
-  );
+  const authUser = await userRepository.findByEmailForAuth(user.email);
   const roleData = await resolveMenus(authUser);
   const tokens = await issueTokens(authUser, roleData.roleName);
   return { user: publicUser(authUser, roleData), tokens };
 };
 
-const login = async ({ restaurantId, email, password, branchId }) => {
+const login = async ({ email, password, branchId }) => {
   try {
-    const user = await userRepository.findByEmailForAuth(restaurantId, email);
+    const user = await userRepository.findByEmailForAuth(email);
 
     if (!user || !(await user.comparePassword(password))) {
       throw new AppError("Invalid email or password", httpStatus.UNAUTHORIZED);
@@ -100,6 +93,7 @@ const login = async ({ restaurantId, email, password, branchId }) => {
     const tokens = await issueTokens(user, roleData.roleName);
     return { user: publicUser(user, roleData), tokens };
   } catch (error) {
+    if (error instanceof AppError) throw error;
     throw new AppError(
       "Error occurred while logging in",
       httpStatus.INTERNAL_SERVER_ERROR,
@@ -133,8 +127,8 @@ const logout = async (userId) => {
   }
 };
 
-const forgotPassword = async ({ restaurantId, email }) => {
-  const user = await userRepository.findByEmailForAuth(restaurantId, email);
+const forgotPassword = async ({ email }) => {
+  const user = await userRepository.findByEmailForAuth(email);
   if (!user) return { resetToken: null };
   const reset = createPasswordResetToken();
   user.passwordResetTokenHash = reset.tokenHash;

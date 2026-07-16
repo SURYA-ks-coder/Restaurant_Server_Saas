@@ -21,9 +21,8 @@ const register = {
 
 const login = {
   body: Joi.object({
-    restaurantId: objectId.optional(),
     branchId: objectId.optional(),
-    email: Joi.string().email().required(),
+    email: Joi.string().email().lowercase().required(),
     password: Joi.string().required(),
   }),
 };
@@ -31,8 +30,7 @@ const login = {
 const refresh = { body: Joi.object({ refreshToken: Joi.string().required() }) };
 const forgotPassword = {
   body: Joi.object({
-    restaurantId: objectId.required(),
-    email: Joi.string().email().required(),
+    email: Joi.string().email().lowercase().required(),
   }),
 };
 const resetPassword = {

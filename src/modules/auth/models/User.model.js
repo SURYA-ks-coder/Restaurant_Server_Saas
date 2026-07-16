@@ -92,7 +92,7 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-userSchema.index({ restaurantId: 1, email: 1 }, { unique: true });
+userSchema.index({ email: 1 }, { unique: true });
 userSchema.plugin(tenantScopePlugin);
 
 userSchema.pre("save", async function hashPassword(next) {

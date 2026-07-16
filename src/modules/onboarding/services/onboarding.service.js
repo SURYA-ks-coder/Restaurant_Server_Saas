@@ -218,7 +218,6 @@ const registerRestaurant = async ({ payload, file }) => {
     "+password +refreshTokenHash +tokenVersion",
   );
   const auth = await authService.login({
-    restaurantId: restaurant._id,
     email: owner.email,
     password: payload.password,
   });
