@@ -44,4 +44,28 @@ const removePrinter = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "Printer removed", data });
 });
 
-module.exports = { get, update, addPrinter, updatePrinter, removePrinter };
+const generateAgentKey = asyncHandler(async (req, res) => {
+  const data = await printerSettingsService.generateAgentKey({
+    tenant: req.tenant,
+    user: req.user,
+  });
+  sendSuccess(res, {
+    message: "Print agent key generated — store it now, it is not shown again",
+    data,
+  });
+});
+
+const getAgentStatus = asyncHandler(async (req, res) => {
+  const data = await printerSettingsService.getAgentStatus({ tenant: req.tenant });
+  sendSuccess(res, { message: "Print agent status fetched", data });
+});
+
+module.exports = {
+  get,
+  update,
+  addPrinter,
+  updatePrinter,
+  removePrinter,
+  generateAgentKey,
+  getAgentStatus,
+};

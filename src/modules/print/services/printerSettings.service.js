@@ -1,4 +1,6 @@
+const crypto = require("crypto");
 const printerSettingsRepository = require("../repositories/printerSettings.repository");
+const { isAgentOnline } = require("./printAgentGateway");
 
 const getOrCreateSettings = async ({ tenant }) => {
   let settings = await printerSettingsRepository.findOne({
@@ -52,10 +54,30 @@ const removePrinter = async ({ printerId, tenant, user }) => {
   return settings;
 };
 
+// Generates (or rotates) the branch's print-agent key. The key is returned
+// once here; it is never included in normal settings reads (select: false).
+// Rotating disconnects nothing immediately but any agent using the old key
+// will fail its next reconnect.
+const generateAgentKey = async ({ tenant, user }) => {
+  const settings = await getOrCreateSettings({ tenant });
+  const agentKey = crypto.randomBytes(32).toString("hex");
+  settings.agentKey = agentKey;
+  settings.updatedBy = user.id;
+  await settings.save();
+  return { agentKey, branchId: String(tenant.branchId) };
+};
+
+const getAgentStatus = async ({ tenant }) => ({
+  branchId: String(tenant.branchId),
+  online: await isAgentOnline(tenant.branchId),
+});
+
 module.exports = {
   getOrCreateSettings,
   updateSettings,
   addPrinter,
   updatePrinter,
   removePrinter,
+  generateAgentKey,
+  getAgentStatus,
 };

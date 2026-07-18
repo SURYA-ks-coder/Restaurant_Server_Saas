@@ -42,6 +42,9 @@ const printerSettingsSchema = new mongoose.Schema(
       index: true,
     },
     printers: [printerSchema],
+    // Credential for the on-site print agent (excluded from normal reads;
+    // socket auth fetches it explicitly with .select("+agentKey"))
+    agentKey: { type: String, select: false },
     receipt: {
       showLogo: { type: Boolean, default: true },
       logoUrl: String,

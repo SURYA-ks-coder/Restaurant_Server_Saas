@@ -1,0 +1,13 @@
+{
+  "name": "flavorhub-print-agent",
+  "version": "1.0.0",
+  "description": "On-site print agent: receives print jobs from the FlavorHub cloud server and forwards them to LAN thermal printers.",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "socket.io-client": "^4.8.1"
+  }
+}

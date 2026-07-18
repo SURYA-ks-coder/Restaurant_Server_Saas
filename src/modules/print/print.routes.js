@@ -40,6 +40,18 @@ router.delete(
   printerSettingsController.removePrinter,
 );
 
+// On-site print agent: key generation (shown once) + connection status
+router.post(
+  "/settings/agent-key",
+  authorize("print:manage"),
+  printerSettingsController.generateAgentKey,
+);
+router.get(
+  "/agent/status",
+  authorize("print:read"),
+  printerSettingsController.getAgentStatus,
+);
+
 router.post(
   "/kot/:id",
   authorize("kot:read"),
