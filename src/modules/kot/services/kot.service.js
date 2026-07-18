@@ -120,6 +120,8 @@ const getKot = async ({ id, tenant }) => {
   return kot;
 };
 
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const listKots = async ({ query, tenant }) => {
   const { page, limit, skip } = parsePagination(query);
   const sort = parseSort(query, ["createdAt", "priority", "status"]);
@@ -127,8 +129,18 @@ const listKots = async ({ query, tenant }) => {
     restaurantId: tenant.restaurantId,
     branchId: tenant.branchId,
   };
-  if (query.status) filter.status = query.status;
-  if (query.kitchenSection) filter.kitchenSection = query.kitchenSection;
+  if (query.status) {
+    const statuses = String(query.status)
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    filter.status = statuses.length > 1 ? { $in: statuses } : statuses[0];
+  }
+  if (query.kitchenSection)
+    filter.kitchenSection = {
+      $regex: `^${escapeRegex(query.kitchenSection.trim())}$`,
+      $options: "i",
+    };
   if (query.billId) filter.billId = query.billId;
 
   const [items, total] = await kotRepository.paginate({
@@ -237,13 +249,15 @@ const updateKotItemStatus = async ({ id, itemId, payload, tenant, user }) => {
   }
 
   if (payload.status === "preparing" || payload.status === "ready") {
+    const allReady = kot.items.every((each) => each.status === "ready");
+    const kotStatus = allReady ? "ready" : "preparing";
     updateKotStatus({
       id,
-      payload: { status: "preparing" },
+      payload: { status: kotStatus },
       tenant,
       user,
     }).catch((err) => {
-      console.error("Error updating KOT status to preparing:", err);
+      console.error(`Error updating KOT status to ${kotStatus}:`, err);
     });
   }
   const io = getIo();

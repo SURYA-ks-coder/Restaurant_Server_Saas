@@ -36,11 +36,28 @@ const authenticate = async (req, res, next) => {
     // userType: "platform_owner" | "restaurant_owner" | "staff"
     const userType = user.userType || payload.userType || "staff";
 
+    // restaurantId always comes from the token's user; a mismatching query value
+    // is a client bug — fail loudly instead of silently returning other data.
+    if (
+      req.query?.restaurantId &&
+      userType !== "platform_owner" &&
+      String(req.query.restaurantId) !== String(user.restaurantId)
+    ) {
+      throw new AppError("restaurantId does not match the authenticated account", 403);
+    }
+
+    // Branch context priority: x-branch-id header → branchId query param → default branch.
+    // enforceBranchAccess still validates the user can access the requested branch.
+    const requestedBranchId = req.headers["x-branch-id"] || req.query?.branchId;
+    if (requestedBranchId && !/^[0-9a-fA-F]{24}$/.test(String(requestedBranchId))) {
+      throw new AppError("Invalid branchId", 400);
+    }
+
     req.user = {
       id: user._id,
       restaurantId: user.restaurantId,
       branchIds: user.branchIds,
-      activeBranchId: req.headers["x-branch-id"] || user.defaultBranchId,
+      activeBranchId: requestedBranchId || user.defaultBranchId,
       roleId: user.roleId?._id || null,
       roleName,
       userType,

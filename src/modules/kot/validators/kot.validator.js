@@ -54,12 +54,9 @@ const list = {
   query: Joi.object({
     page: Joi.number().integer().min(1).default(1),
     limit: Joi.number().integer().min(1).max(100).default(10),
-    status: Joi.string().valid(
-      "pending",
-      "preparing",
-      "ready",
-      "served",
-      "cancelled",
+    // Single status or comma-separated list, e.g. "pending,preparing"
+    status: Joi.string().pattern(
+      /^(pending|preparing|ready|served|cancelled)(\s*,\s*(pending|preparing|ready|served|cancelled))*$/,
     ),
     kitchenSection: Joi.string().max(120).allow("", null),
     billId: objectId.allow(null),
