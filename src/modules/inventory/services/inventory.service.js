@@ -130,6 +130,108 @@ const adjustStock = async ({ id, payload, tenant, user, type }) => {
   return { item: updatedItem, transaction };
 };
 
+// Reconcile system stock against a physical count. Every variance becomes an
+// "adjustment" ledger entry so the audit trail stays complete.
+const recordStockCount = async ({ payload, tenant, user }) => {
+  const results = [];
+  let adjustedCount = 0;
+
+  for (const entry of payload.items) {
+    const item = await inventoryRepository.findOne({
+      _id: entry.inventoryItemId,
+      restaurantId: tenant.restaurantId,
+      branchId: tenant.branchId,
+    });
+    if (!item)
+      throw new AppError(
+        `Inventory item not found: ${entry.inventoryItemId}`,
+        httpStatus.NOT_FOUND,
+      );
+
+    const systemQuantity = item.stockQuantity;
+    const countedQuantity = Number(entry.countedQuantity);
+    const variance = countedQuantity - systemQuantity;
+
+    if (variance !== 0) {
+      await inventoryTransactionRepository.create({
+        restaurantId: tenant.restaurantId,
+        branchId: tenant.branchId,
+        inventoryItemId: item._id,
+        type: "adjustment",
+        referenceType: "stock_count",
+        quantity: variance,
+        previousQuantity: systemQuantity,
+        updatedQuantity: countedQuantity,
+        notes: `Physical stock count${payload.notes ? `: ${payload.notes}` : ""}`,
+        createdBy: user.id,
+      });
+      await inventoryRepository.updateById(item._id, {
+        stockQuantity: countedQuantity,
+        updatedBy: user.id,
+      });
+      adjustedCount += 1;
+
+      if (countedQuantity <= item.minimumStock) {
+        notify(tenant.branchId, {
+          type: "low_stock",
+          title: "Low Stock Alert",
+          description: `${item.materialName} running low (${countedQuantity} left)`,
+          meta: {
+            itemId: item._id,
+            materialName: item.materialName,
+            stockQuantity: countedQuantity,
+            minimumStock: item.minimumStock,
+          },
+        });
+      }
+    }
+
+    results.push({
+      inventoryItemId: item._id,
+      materialName: item.materialName,
+      unit: item.unit,
+      systemQuantity,
+      countedQuantity,
+      variance,
+    });
+  }
+
+  return { results, adjustedCount, countedItems: results.length };
+};
+
+// Suggest a purchase list for items at or below their minimum stock level.
+// Suggested quantity restocks to twice the minimum (a simple par-level target).
+const reorderSuggestions = async ({ tenant }) => {
+  const items = await inventoryRepository.model
+    .find({
+      restaurantId: tenant.restaurantId,
+      branchId: tenant.branchId,
+      status: "active",
+      minimumStock: { $gt: 0 },
+      $expr: { $lte: ["$stockQuantity", "$minimumStock"] },
+    })
+    .sort({ stockQuantity: 1 });
+
+  return items.map((item) => {
+    const suggestedQuantity = Math.max(
+      item.minimumStock * 2 - item.stockQuantity,
+      0,
+    );
+    return {
+      inventoryItemId: item._id,
+      materialName: item.materialName,
+      category: item.category,
+      supplier: item.supplier,
+      unit: item.unit,
+      stockQuantity: item.stockQuantity,
+      minimumStock: item.minimumStock,
+      purchasePrice: item.purchasePrice,
+      suggestedQuantity,
+      estimatedCost: Number((suggestedQuantity * item.purchasePrice).toFixed(2)),
+    };
+  });
+};
+
 const listLowStock = async ({ tenant }) => {
   return inventoryRepository.model
     .find({
@@ -206,6 +308,8 @@ module.exports = {
   getInventoryItem,
   listInventoryItems,
   adjustStock,
+  recordStockCount,
+  reorderSuggestions,
   listLowStock,
   getStockHistory,
   inventoryReport,

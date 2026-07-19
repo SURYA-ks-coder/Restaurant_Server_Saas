@@ -48,6 +48,25 @@ const removeStock = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "Stock removed", data });
 });
 
+const stockCount = asyncHandler(async (req, res) => {
+  const data = await inventoryService.recordStockCount({
+    payload: req.body,
+    tenant: req.tenant,
+    user: req.user,
+  });
+  sendSuccess(res, {
+    message: `Stock count recorded (${data.adjustedCount} of ${data.countedItems} items adjusted)`,
+    data,
+  });
+});
+
+const reorderSuggestions = asyncHandler(async (req, res) => {
+  const data = await inventoryService.reorderSuggestions({
+    tenant: req.tenant,
+  });
+  sendSuccess(res, { message: "Reorder suggestions fetched", data });
+});
+
 const get = asyncHandler(async (req, res) => {
   const data = await inventoryService.getInventoryItem({
     id: req.params.id,
@@ -87,6 +106,8 @@ module.exports = {
   update,
   addStock,
   removeStock,
+  stockCount,
+  reorderSuggestions,
   get,
   list,
   lowStock,

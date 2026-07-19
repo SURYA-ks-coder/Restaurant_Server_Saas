@@ -19,7 +19,18 @@ router.get(
   controller.list,
 );
 router.get("/low-stock", authorize("inventory:read"), controller.lowStock);
+router.get(
+  "/reorder-suggestions",
+  authorize("inventory:read"),
+  controller.reorderSuggestions,
+);
 router.get("/report", authorize("inventory:read"), controller.report);
+router.post(
+  "/stock-count",
+  authorize("inventory:update"),
+  validate(validator.stockCount),
+  controller.stockCount,
+);
 router.get(
   "/:id",
   authorize("inventory:read"),

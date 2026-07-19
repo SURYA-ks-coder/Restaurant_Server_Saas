@@ -39,6 +39,21 @@ const adjustStock = {
   }),
 };
 
+const stockCount = {
+  body: Joi.object({
+    notes: Joi.string().max(500).allow("", null),
+    items: Joi.array()
+      .items(
+        Joi.object({
+          inventoryItemId: objectId.required(),
+          countedQuantity: quantity.required(),
+        }),
+      )
+      .min(1)
+      .required(),
+  }),
+};
+
 const idParam = { params: Joi.object({ id: objectId.required() }) };
 
 const list = {
@@ -54,4 +69,4 @@ const list = {
   }),
 };
 
-module.exports = { create, update, adjustStock, idParam, list };
+module.exports = { create, update, adjustStock, stockCount, idParam, list };

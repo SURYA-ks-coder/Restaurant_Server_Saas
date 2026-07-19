@@ -27,7 +27,7 @@ const inventoryTransactionSchema = new mongoose.Schema(
     },
     referenceType: {
       type: String,
-      enum: ["manual", "kot", "wastage", "transfer"],
+      enum: ["manual", "kot", "wastage", "transfer", "purchase", "stock_count"],
       default: "manual",
     },
     quantity: { type: Number, required: true },
