@@ -9,16 +9,25 @@ const seed = async () => {
   const restaurant = await Restaurant.findOneAndUpdate(
     { slug: "demo-restaurant" },
     { name: "Demo Restaurant", slug: "demo-restaurant", status: "active" },
-    { upsert: true, new: true }
+    { upsert: true, new: true },
   );
 
   const branch = await Branch.findOneAndUpdate(
     { restaurantId: restaurant._id, code: "MAIN" },
-    { restaurantId: restaurant._id, branchName: "Main Branch", code: "MAIN", isDefault: true, status: "active" },
-    { upsert: true, new: true }
+    {
+      restaurantId: restaurant._id,
+      branchName: "Main Branch",
+      code: "MAIN",
+      isDefault: true,
+      status: "active",
+    },
+    { upsert: true, new: true },
   );
 
-  const exists = await User.findOne({ restaurantId: restaurant._id, email: "owner@example.com" });
+  const exists = await User.findOne({
+    restaurantId: restaurant._id,
+    email: "owner@example.com",
+  });
   if (!exists) {
     await User.create({
       restaurantId: restaurant._id,
@@ -40,8 +49,8 @@ const seed = async () => {
         "menu:read",
         "menu:create",
         "menu:update",
-        "menu:delete"
-      ]
+        "menu:delete",
+      ],
     });
   }
 
