@@ -28,6 +28,7 @@ const stockTransferRoutes = require("../modules/stockTransfer/stockTransfer.rout
 const wastageRoutes = require("../modules/wastage/wastage.routes");
 const purchaseRoutes = require("../modules/purchase/purchase.routes");
 const printRoutes = require("../modules/print/print.routes");
+const notificationRoutes = require("../modules/notification/notification.routes");
 const router = express.Router();
 
 router.get("/health", (req, res) => {
@@ -63,5 +64,6 @@ router.use("/stock-transfers", stockTransferRoutes);
 router.use("/wastage", wastageRoutes);
 router.use("/purchases", purchaseRoutes);
 router.use("/print", printRoutes);
+router.use("/notifications", notificationRoutes);
 
 module.exports = router;
