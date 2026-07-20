@@ -302,6 +302,41 @@ const trackQrOrder = async ({ restaurantId, branchId, orderId, billNo }) => {
   };
 };
 
+const WAITER_ALERT_TITLES = {
+  waiter: "Waiter Requested",
+  water: "Water Requested",
+  bill: "Bill Requested",
+};
+
+/**
+ * Public QR-menu action: table-side service request (call waiter / water /
+ * bill) raised from the unauthenticated customer-facing menu app. Surfaces
+ * as a branch-scoped bell notification for staff — no bill/order involved.
+ */
+const waiterAlert = async ({
+  restaurantId,
+  branchId,
+  tableId,
+  tableLabel,
+  requestType,
+}) => {
+  if (!restaurantId || !branchId || !requestType) {
+    throw new AppError(
+      "restaurantId, branchId and requestType are required",
+      httpStatus.BAD_REQUEST,
+    );
+  }
+
+  notify(branchId, {
+    type: "waiter_alert",
+    title: WAITER_ALERT_TITLES[requestType] || "Table Assistance Requested",
+    description: tableLabel ? `Table ${tableLabel}` : "",
+    meta: { tableId, requestType },
+  });
+
+  return { acknowledged: true };
+};
+
 const getBill = async ({ id, tenant }) => {
   const bill = await billRepository.findOne({
     _id: id,
@@ -833,4 +868,5 @@ module.exports = {
   todayOrders,
   liveStatus,
   trackQrOrder,
+  waiterAlert,
 };

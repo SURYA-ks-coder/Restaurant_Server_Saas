@@ -179,6 +179,23 @@ const trackQrOrder = asyncHandler(async (req, res) => {
   });
 });
 
+const waiterAlert = asyncHandler(async (req, res) => {
+  const { restaurantId, branchId, tableId, tableLabel, requestType } =
+    req.body;
+  const data = await posService.waiterAlert({
+    restaurantId,
+    branchId,
+    tableId,
+    tableLabel,
+    requestType,
+  });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Request sent successfully",
+    data,
+  });
+});
+
 const get = asyncHandler(async (req, res) => {
   const data = await posService.getBill({
     id: req.params.id,
@@ -246,4 +263,5 @@ module.exports = {
   todayOrders,
   liveStatus,
   trackQrOrder,
+  waiterAlert,
 };

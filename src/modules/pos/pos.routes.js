@@ -21,6 +21,10 @@ router.post(
 // Public — used by the unauthenticated QR customer menu app to poll status
 router.post("/trackQRorder", controller.trackQrOrder);
 
+// Public — table-side service request (call waiter / water / bill) from the
+// unauthenticated QR customer menu app
+router.post("/waiterAlert", controller.waiterAlert);
+
 router.use(authenticate, enforceBranchAccess, attachTenantScope);
 router.post(
   "/",
