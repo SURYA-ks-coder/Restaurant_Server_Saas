@@ -4,7 +4,7 @@ const { sendSuccess } = require("../../../helpers/apiResponse");
 const posService = require("../services/pos.service");
 
 const create = asyncHandler(async (req, res) => {
-  const data = await posService.createBill({
+  const { bill, customer } = await posService.createBill({
     payload: req.body,
     tenant: req.tenant || {
       branchId: req.body.branchId,
@@ -15,7 +15,16 @@ const create = asyncHandler(async (req, res) => {
   sendSuccess(res, {
     statusCode: httpStatus.CREATED,
     message: "Order created successfully",
-    data,
+    data: bill,
+    meta: customer
+      ? {
+          customer: {
+            id: customer._id,
+            customerName: customer.customerName,
+            mobileNumber: customer.mobileNumber,
+          },
+        }
+      : null,
   });
 });
 

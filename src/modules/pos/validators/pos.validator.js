@@ -34,6 +34,11 @@ const create = {
       .required(),
     tableId: objectId.allow(null),
     customerId: objectId.allow(null),
+    customerName: Joi.string().trim().max(120).allow("", null),
+    customerPhone: Joi.string()
+      .trim()
+      .pattern(/^[0-9+\-\s]{7,20}$/)
+      .allow("", null),
     billNo: Joi.string().trim().max(100),
     items: Joi.array().items(billItem).min(1).required(),
     taxRate: Joi.number().min(0).max(100).default(0),

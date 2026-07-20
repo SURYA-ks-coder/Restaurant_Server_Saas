@@ -6,6 +6,7 @@ const recipeRepository = require("../../recipe/repositories/recipe.repository");
 const inventoryRepository = require("../../inventory/repositories/inventory.repository");
 const inventoryTransactionRepository = require("../../inventory/repositories/inventoryTransaction.repository");
 const customerRepository = require("../../customer/repositories/customer.repository");
+const customerService = require("../../customer/services/customer.service");
 const {
   parsePagination,
   parseSort,
@@ -137,6 +138,23 @@ const createBill = async ({ payload, tenant, user }) => {
         : "pending");
     const status = payload.status;
 
+    let customerId = payload.customerId || null;
+    let resolvedCustomer = null;
+    if (!customerId && payload.customerPhone) {
+      resolvedCustomer = await customerService.resolveOrderCustomer({
+        restaurantId: tenant?.restaurantId,
+        branchId: tenant?.branchId,
+        mobileNumber: payload.customerPhone,
+        customerName: payload.customerName,
+      });
+      customerId = resolvedCustomer._id;
+    } else if (!customerId && payload.orderType === "qr") {
+      throw new AppError(
+        "Customer phone number is required for QR orders",
+        httpStatus.BAD_REQUEST,
+      );
+    }
+
     const bill = await runWithOptionalTransaction(async (session) => {
       const bill = await billRepository.create(
         {
@@ -145,6 +163,7 @@ const createBill = async ({ payload, tenant, user }) => {
           billNo: payload.billNo || createInvoiceNumber(),
           restaurantId: tenant?.restaurantId,
           branchId: tenant?.branchId,
+          customerId,
           createdBy: user?.id || null,
           paymentStatus,
           status,
@@ -184,15 +203,18 @@ const createBill = async ({ payload, tenant, user }) => {
         });
       }
 
-      if (payload.customerId) {
-        const customer = await customerRepository.findOne({
-          _id: payload.customerId,
-          restaurantId: tenant.restaurantId,
-          branchId: tenant.branchId,
-        });
+      if (customerId) {
+        const customer =
+          resolvedCustomer && String(resolvedCustomer._id) === String(customerId)
+            ? resolvedCustomer
+            : await customerRepository.findOne({
+                _id: customerId,
+                restaurantId: tenant.restaurantId,
+                branchId: tenant.branchId,
+              });
         if (customer) {
-          await customerRepository.updateById(
-            payload.customerId,
+          resolvedCustomer = await customerRepository.updateById(
+            customerId,
             {
               totalOrders: (customer.totalOrders || 0) + 1,
               loyaltyPoints:
@@ -237,7 +259,7 @@ const createBill = async ({ payload, tenant, user }) => {
       }
     }
 
-    return bill;
+    return { bill, customer: resolvedCustomer };
   } catch (error) {
     console.error("Error creating order:", error);
     throw error;
