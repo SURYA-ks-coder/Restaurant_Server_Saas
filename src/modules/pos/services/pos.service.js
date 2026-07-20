@@ -162,6 +162,9 @@ const createBill = async ({ payload, tenant, user }) => {
           kitchenSection: "Kitchen",
           ...payload,
           status: "pending",
+          // Stock was already deducted at bill creation (deductRecipeStock
+          // above) — flag it so the KOT flow doesn't deduct a second time.
+          stockDeducted: true,
           createdBy: user?.id || null,
           updatedBy: user?.id || null,
           updatedAt: new Date(),

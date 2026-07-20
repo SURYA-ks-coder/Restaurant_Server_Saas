@@ -95,12 +95,20 @@ const deleteRecipe = async ({ id, tenant, user }) => {
 };
 
 const getRecipe = async ({ id, tenant }) => {
-  const recipe = await recipeRepository.findOne({
-    _id: id,
-    restaurantId: tenant.restaurantId,
-    branchId: tenant.branchId,
-    isDeleted: false,
-  });
+  const recipe = await recipeRepository.model
+    .findOne({
+      _id: id,
+      restaurantId: tenant.restaurantId,
+      branchId: tenant.branchId,
+      isDeleted: false,
+    })
+    .populate([
+      { path: "menuItemId", select: "itemName price image" },
+      {
+        path: "ingredients.inventoryItemId",
+        select: "materialName unit purchasePrice stockQuantity",
+      },
+    ]);
   if (!recipe) throw new AppError("Recipe not found", httpStatus.NOT_FOUND);
   return recipe;
 };
@@ -119,6 +127,13 @@ const listRecipes = async ({ query, tenant }) => {
     sort,
     skip,
     limit,
+    populate: [
+      { path: "menuItemId", select: "itemName price image" },
+      {
+        path: "ingredients.inventoryItemId",
+        select: "materialName unit purchasePrice stockQuantity",
+      },
+    ],
   });
   return { items, meta: paginationMeta({ total, page, limit }) };
 };
