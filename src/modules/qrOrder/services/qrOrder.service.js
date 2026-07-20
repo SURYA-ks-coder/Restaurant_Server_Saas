@@ -3,6 +3,7 @@ const uuid = require("uuid");
 const QrOrderRepository = require("../repositories/qrOrder.repository");
 const AppError = require("../../../utils/AppError");
 const { getIo } = require("../../../sockets");
+const { notify } = require("../../../sockets/notify");
 const printService = require("../../print/services/print.service");
 
 const calculateTotals = ({ items, taxRate = 0, discount = 0 }) => {
@@ -33,7 +34,7 @@ const createQrOrder = async ({ payload, tenant, user }) => {
 
   const io = getIo();
   if (io) {
-    io.emit("qrOrder:created", qrOrder);
+    io.to(`branch:${tenant.branchId}`).emit("qrOrder:created", qrOrder);
   }
 
   return qrOrder;
@@ -102,7 +103,7 @@ const updateQrOrderCart = async ({ id, payload, tenant }) => {
   });
   const io = getIo();
   if (io) {
-    io.emit("qrOrder:updated", updated);
+    io.to(`branch:${tenant.branchId}`).emit("qrOrder:updated", updated);
   }
   return updated;
 };
@@ -122,8 +123,15 @@ const placeQrOrder = async ({ id, tenant }) => {
   });
   const io = getIo();
   if (io) {
-    io.emit("qrOrder:placed", updated);
+    io.to(`branch:${tenant.branchId}`).emit("qrOrder:placed", updated);
   }
+
+  notify(tenant.branchId, {
+    type: "order_created",
+    title: `New QR Order #${updated.orderNo}`,
+    description: `${updated.items.length} items · ₹${updated.grandTotal}`,
+    meta: { qrOrderId: updated._id, orderNo: updated.orderNo },
+  });
 
   printService.printQrOrder({ qrOrderId: id, tenant }).catch((err) => {
     console.error("Error printing QR order slip:", err.message);
@@ -158,7 +166,16 @@ const recordQrPayment = async ({ id, payload, tenant }) => {
 
   const io = getIo();
   if (io) {
-    io.emit("qrOrder:payment", updated);
+    io.to(`branch:${tenant.branchId}`).emit("qrOrder:payment", updated);
+  }
+
+  if (paymentStatus === "paid") {
+    notify(tenant.branchId, {
+      type: "payment_received",
+      title: "Payment Received",
+      description: `QR Order #${updated.orderNo} · ₹${updated.grandTotal}`,
+      meta: { qrOrderId: updated._id, orderNo: updated.orderNo },
+    });
   }
 
   return updated;
@@ -176,8 +193,16 @@ const cancelQrOrder = async ({ id, tenant }) => {
   });
   const io = getIo();
   if (io) {
-    io.emit("qrOrder:cancelled", updated);
+    io.to(`branch:${tenant.branchId}`).emit("qrOrder:cancelled", updated);
   }
+
+  notify(tenant.branchId, {
+    type: "order_cancelled",
+    title: `QR Order #${updated.orderNo} Cancelled`,
+    description: `${updated.items.length} items · ₹${updated.grandTotal}`,
+    meta: { qrOrderId: updated._id, orderNo: updated.orderNo },
+  });
+
   return updated;
 };
 
