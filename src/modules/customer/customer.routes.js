@@ -10,6 +10,10 @@ const attachTenantScope = require("../../middleware/tenantScope.middleware");
 const validator = require("./validators/customer.validator");
 
 const router = express.Router();
+
+// Public — used by the unauthenticated QR customer menu app
+router.post("/qr/profile", controller.qrProfile);
+
 router.use(authenticate, enforceBranchAccess, attachTenantScope);
 
 router.get(

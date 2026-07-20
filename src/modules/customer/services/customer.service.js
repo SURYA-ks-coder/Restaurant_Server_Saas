@@ -100,6 +100,44 @@ const resolveOrderCustomer = async ({
   }
 };
 
+/**
+ * Public QR-menu lookup: a customer's profile + recent order history by
+ * phone number, scoped to a single restaurant/branch. Used by the
+ * unauthenticated customer-facing menu app, so an unknown phone number
+ * simply returns no customer/orders rather than a 404.
+ */
+const getQrCustomerProfile = async ({
+  restaurantId,
+  branchId,
+  mobileNumber,
+}) => {
+  const phone = String(mobileNumber || "").trim();
+  if (!restaurantId || !branchId || !phone) {
+    throw new AppError(
+      "restaurantId, branchId and mobileNumber are required",
+      httpStatus.BAD_REQUEST,
+    );
+  }
+
+  const customer = await customerRepository.findOne({
+    restaurantId,
+    branchId,
+    mobileNumber: phone,
+  });
+
+  if (!customer) return { customer: null, orders: [] };
+
+  const orders = await billRepository.model
+    .find({ restaurantId, branchId, customerId: customer._id })
+    .sort({ createdAt: -1 })
+    .limit(50)
+    .select(
+      "billNo orderType items subTotal taxTotal grandTotal taxRate note status paymentStatus createdAt",
+    );
+
+  return { customer, orders };
+};
+
 const createCustomer = async ({ payload, tenant, user }) => {
   const exists = await customerRepository.findOne({
     restaurantId: tenant.restaurantId,
@@ -199,4 +237,5 @@ module.exports = {
   listCustomers,
   getCustomerHistory,
   resolveOrderCustomer,
+  getQrCustomerProfile,
 };

@@ -266,6 +266,42 @@ const createBill = async ({ payload, tenant, user }) => {
   }
 };
 
+/**
+ * Public QR-menu lookup: lightweight status poll for a single order by id
+ * or bill number, scoped to a restaurant/branch. Used by the
+ * unauthenticated customer-facing menu app to show live order status.
+ */
+const trackQrOrder = async ({ restaurantId, branchId, orderId, billNo }) => {
+  if (!restaurantId || !branchId || (!orderId && !billNo)) {
+    throw new AppError(
+      "restaurantId, branchId and orderId or billNo are required",
+      httpStatus.BAD_REQUEST,
+    );
+  }
+
+  const filter = { restaurantId, branchId };
+  if (orderId && mongoose.Types.ObjectId.isValid(orderId)) {
+    filter._id = orderId;
+  } else if (billNo) {
+    filter.billNo = billNo;
+  } else {
+    throw new AppError("Invalid orderId", httpStatus.BAD_REQUEST);
+  }
+
+  const bill = await billRepository.findOne(
+    filter,
+    "billNo status paymentStatus createdAt",
+  );
+  if (!bill) throw new AppError("Order not found", httpStatus.NOT_FOUND);
+
+  return {
+    id: bill._id,
+    billNo: bill.billNo,
+    status: bill.status,
+    paymentStatus: bill.paymentStatus,
+  };
+};
+
 const getBill = async ({ id, tenant }) => {
   const bill = await billRepository.findOne({
     _id: id,
@@ -796,4 +832,5 @@ module.exports = {
   generateInvoice,
   todayOrders,
   liveStatus,
+  trackQrOrder,
 };

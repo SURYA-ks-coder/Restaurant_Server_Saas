@@ -18,6 +18,9 @@ router.post(
   controller.create,
 );
 
+// Public — used by the unauthenticated QR customer menu app to poll status
+router.post("/trackQRorder", controller.trackQrOrder);
+
 router.use(authenticate, enforceBranchAccess, attachTenantScope);
 router.post(
   "/",

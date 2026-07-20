@@ -164,6 +164,21 @@ const generateInvoice = asyncHandler(async (req, res) => {
   });
 });
 
+const trackQrOrder = asyncHandler(async (req, res) => {
+  const { restaurantId, branchId, orderId, billNo } = req.body;
+  const data = await posService.trackQrOrder({
+    restaurantId,
+    branchId,
+    orderId,
+    billNo,
+  });
+  sendSuccess(res, {
+    statusCode: httpStatus.OK,
+    message: "Order status fetched successfully",
+    data,
+  });
+});
+
 const get = asyncHandler(async (req, res) => {
   const data = await posService.getBill({
     id: req.params.id,
@@ -230,4 +245,5 @@ module.exports = {
   list,
   todayOrders,
   liveStatus,
+  trackQrOrder,
 };

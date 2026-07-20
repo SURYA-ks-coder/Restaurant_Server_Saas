@@ -58,4 +58,14 @@ const history = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: "Customer history fetched", data });
 });
 
-module.exports = { create, update, remove, get, list, history };
+const qrProfile = asyncHandler(async (req, res) => {
+  const { restaurantId, branchId, mobileNumber } = req.body;
+  const data = await customerService.getQrCustomerProfile({
+    restaurantId,
+    branchId,
+    mobileNumber,
+  });
+  sendSuccess(res, { message: "Customer profile fetched", data });
+});
+
+module.exports = { create, update, remove, get, list, history, qrProfile };
