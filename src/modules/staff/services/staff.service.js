@@ -147,7 +147,20 @@ const listStaff = async ({ query, tenant, user }) => {
     isDeleted: false,
   };
   if (query.status) filter.status = query.status;
-  if (query.roleId) filter.roleId = query.roleId;
+  if (query.roleId) {
+    filter.roleId = query.roleId;
+  } else if (query.role) {
+    // Match by role name, e.g. role=manager matches "Manager" / "Branch Manager".
+    const escaped = query.role.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const roles = await roleRepository.model
+      .find({
+        restaurantId: tenant.restaurantId,
+        roleName: { $regex: escaped, $options: "i" },
+      })
+      .select("_id")
+      .lean();
+    filter.roleId = { $in: roles.map((r) => r._id) };
+  }
   if (query.departmentId) filter.departmentId = query.departmentId;
   if (query.designationId) filter.designationId = query.designationId;
   if (query.shiftId) filter.shiftId = query.shiftId;

@@ -1,7 +1,19 @@
 const httpStatus = require("http-status");
 const asyncHandler = require("../../../utils/asyncHandler");
+const AppError = require("../../../utils/AppError");
 const { sendSuccess } = require("../../../helpers/apiResponse");
 const service = require("../services/onboarding.service");
+
+// Non-platform users may only touch their own restaurant.
+const assertTenantRestaurant = (req, id) => {
+  if (req.user?.userType === "platform_owner") return;
+  if (String(req.user?.restaurantId) !== String(id)) {
+    throw new AppError(
+      "You do not have access to this restaurant",
+      httpStatus.FORBIDDEN,
+    );
+  }
+};
 
 const register = asyncHandler(async (req, res) => {
   const data = await service.registerRestaurant({
@@ -41,11 +53,13 @@ const list = asyncHandler(async (req, res) => {
 });
 
 const get = asyncHandler(async (req, res) => {
+  assertTenantRestaurant(req, req.params.id);
   const data = await service.getRestaurant({ id: req.params.id });
   sendSuccess(res, { message: "Restaurant fetched", data });
 });
 
 const update = asyncHandler(async (req, res) => {
+  assertTenantRestaurant(req, req.params.id);
   const data = await service.updateRestaurant({
     id: req.params.id,
     payload: req.body,
@@ -55,6 +69,7 @@ const update = asyncHandler(async (req, res) => {
 });
 
 const updateStatus = asyncHandler(async (req, res) => {
+  assertTenantRestaurant(req, req.params.id);
   const data = await service.updateRestaurantStatus({
     id: req.params.id,
     status: req.body.status,

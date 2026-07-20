@@ -55,6 +55,8 @@ const authenticate = async (req, res, next) => {
 
     req.user = {
       id: user._id,
+      name: user.name,
+      profileImage: user.profileImage || null,
       restaurantId: user.restaurantId,
       branchIds: user.branchIds,
       activeBranchId: requestedBranchId || user.defaultBranchId,
